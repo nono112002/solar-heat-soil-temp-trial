@@ -31,7 +31,7 @@ PIN_SD_DETECT = 20   # カード検出（挿入時 LOW）
 PIN_BUS       = 28   # 1-Wire バス（全センサー共通）
 PIN_LED_TX    = 15   # データ送信時 LED
 
-INTERVAL_SEC = 1800  # 計測間隔（秒）30分
+INTERVAL_SEC = 30    # 計測間隔（秒）※デバッグ用 / 本番は1800
 TIME_OFFSET  = 9 * 3600  # JST (UTC+9)
 
 led_tx    = machine.Pin(PIN_LED_TX, machine.Pin.OUT)
