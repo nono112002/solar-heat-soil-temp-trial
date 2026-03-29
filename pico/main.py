@@ -1,6 +1,9 @@
 """
 Raspberry Pi Pico W - 太陽熱養生 温度ロガー
 機能: DS18B20 複数センサ / SDカード記録 / Ambient送信 / MQTT送信
+
+センサーマッピングは SD カードの sensor_map.json で管理
+  {"zone": "zone-a", "sensors": {"<ID>": "<label>", ...}}
 """
 import machine
 import onewire
@@ -27,20 +30,53 @@ PIN_SD_CS   = 17
 PIN_BUS     = 28   # 1-Wire バス（全センサー共通）
 PIN_LED_TX  = 15   # データ送信時 LED
 
-# --- センサーIDとラベルのマッピング ---
-SENSOR_MAP = {
-    config.ID_CENTER_10: "center_10cm",
-    config.ID_CENTER_25: "center_25cm",
-    config.ID_CENTER_40: "center_40cm",
-    config.ID_EDGE_10:   "edge_10cm",
-    config.ID_EDGE_25:   "edge_25cm",
-    config.ID_EDGE_40:   "edge_40cm",
-    config.ID_OUTDOOR:   "outdoor",
-}
-
-INTERVAL_SEC = 600  # 計測間隔（10分）
+INTERVAL_SEC = 600   # 計測間隔（秒）
+TIME_OFFSET  = 9 * 3600  # JST (UTC+9)
 
 led_tx = machine.Pin(PIN_LED_TX, machine.Pin.OUT)
+
+
+# --- SDカード ---
+def mount_sd():
+    spi = machine.SPI(0,
+        sck=machine.Pin(PIN_SD_SCK),
+        mosi=machine.Pin(PIN_SD_MOSI),
+        miso=machine.Pin(PIN_SD_MISO))
+    sd = sdcard.SDCard(spi, machine.Pin(PIN_SD_CS))
+    os.mount(os.VfsFat(sd), "/sd")
+
+
+def load_sensor_map():
+    """SDカードの sensor_map.json からゾーンとIDマッピングを読み込む"""
+    try:
+        with open("/sd/sensor_map.json", "r") as f:
+            data = ujson.load(f)
+        zone       = data.get("zone", "unknown")
+        sensor_map = data.get("sensors", {})
+        print("sensor_map loaded: zone={} / {} sensors".format(zone, len(sensor_map)))
+        return zone, sensor_map
+    except Exception as e:
+        print("sensor_map.json load error:", e)
+        return "unknown", {}
+
+
+def _exists(path):
+    try:
+        os.stat(path)
+        return True
+    except:
+        return False
+
+
+def log_to_sd(ts, zone, data):
+    fname = "/sd/{}_log_{:04d}{:02d}{:02d}.csv".format(zone, ts[0], ts[1], ts[2])
+    need_header = not _exists(fname)
+    with open(fname, "a") as f:
+        if need_header:
+            f.write("datetime,label,temp_c\n")
+        dt = "{:04d}-{:02d}-{:02d} {:02d}:{:02d}:{:02d}".format(*ts[:6])
+        for label, temp in data.items():
+            f.write("{},{},{:.2f}\n".format(dt, label, temp))
 
 
 # --- WiFi ---
@@ -61,53 +97,31 @@ def connect_wifi():
 def sync_ntp():
     try:
         ntptime.settime()
+        print("NTP synced (UTC)")
     except Exception as e:
         print("NTP error:", e)
 
 
-# --- SDカード ---
-def mount_sd():
-    spi = machine.SPI(0,
-        sck=machine.Pin(PIN_SD_SCK),
-        mosi=machine.Pin(PIN_SD_MOSI),
-        miso=machine.Pin(PIN_SD_MISO))
-    sd = sdcard.SDCard(spi, machine.Pin(PIN_SD_CS))
-    os.mount(os.VfsFat(sd), "/sd")
-
-
-def log_to_sd(ts, data):
-    """CSVにタイムスタンプ付きで記録"""
-    fname = "/sd/{}_log_{:04d}{:02d}{:02d}.csv".format(config.ZONE, ts[0], ts[1], ts[2])
-    need_header = not _exists(fname)
-    with open(fname, "a") as f:
-        if need_header:
-            f.write("datetime,label,temp_c\n")
-        dt = "{:04d}-{:02d}-{:02d} {:02d}:{:02d}:{:02d}".format(*ts[:6])
-        for label, temp in data.items():
-            f.write("{},{},{:.2f}\n".format(dt, label, temp))
-
-
-def _exists(path):
-    try:
-        os.stat(path)
-        return True
-    except:
-        return False
+def jst_time():
+    """UTC → JST (UTC+9) に変換して返す"""
+    return time.localtime(time.time() + TIME_OFFSET)
 
 
 # --- センサー読み取り ---
-def read_sensors():
+def read_sensors(sensor_map):
     results = {}
     ow   = onewire.OneWire(machine.Pin(PIN_BUS))
     ds   = ds18x20.DS18X20(ow)
     roms = ds.scan()
-    if roms:
-        ds.convert_temp()
-        time.sleep_ms(750)
-        for rom in roms:
-            id_str = ''.join(['{:02x}'.format(b) for b in rom])
-            label  = SENSOR_MAP.get(id_str, "unknown_" + id_str[:8])
-            results[label] = ds.read_temp(rom)
+    if not roms:
+        print("No sensors found")
+        return results
+    ds.convert_temp()
+    time.sleep_ms(750)
+    for rom in roms:
+        id_str = ''.join(['{:02x}'.format(b) for b in rom])
+        label  = sensor_map.get(id_str, "unknown_" + id_str[:8])
+        results[label] = ds.read_temp(rom)
     return results
 
 
@@ -131,18 +145,15 @@ def send_ambient(data):
 
 
 # --- MQTT ---
-def send_mqtt(ts, data):
+def send_mqtt(ts, zone, data):
     if not MQTT_AVAILABLE:
         return False
     try:
-        client = MQTTClient(
-            "pico_{}".format(config.ZONE),
-            config.MQTT_BROKER,
-            port=config.MQTT_PORT)
+        client = MQTTClient("pico_{}".format(zone), config.MQTT_BROKER, port=config.MQTT_PORT)
         client.connect()
         dt = "{:04d}-{:02d}-{:02d}T{:02d}:{:02d}:{:02d}".format(*ts[:6])
         for label, temp in data.items():
-            topic   = "farm/solar-heat/{}/{}".format(config.ZONE, label)
+            topic   = "solar-heat/{}/{}".format(zone, label)
             payload = ujson.dumps({"time": dt, "temp": round(temp, 2)})
             client.publish(topic, payload)
         client.disconnect()
@@ -163,19 +174,21 @@ def blink(n=2):
 
 # --- 起動 ---
 mount_sd()
+zone, sensor_map = load_sensor_map()
+
 if connect_wifi():
     sync_ntp()
 
 # --- メインループ ---
 while True:
-    ts   = time.localtime()
-    data = read_sensors()
+    ts   = jst_time()
+    data = read_sensors(sensor_map)
     print(ts[:6], data)
 
-    log_to_sd(ts, data)
+    log_to_sd(ts, zone, data)
 
     if connect_wifi():
-        ok_mqtt    = send_mqtt(ts, data)
+        ok_mqtt    = send_mqtt(ts, zone, data)
         ok_ambient = send_ambient(data)
         if ok_mqtt or ok_ambient:
             blink(2)

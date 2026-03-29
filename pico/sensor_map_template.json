@@ -1,0 +1,12 @@
+{
+  "zone": "zone-x",
+  "sensors": {
+    "28xxxxxxxxxxxx00": "center_10cm",
+    "28xxxxxxxxxxxx01": "center_25cm",
+    "28xxxxxxxxxxxx02": "center_40cm",
+    "28xxxxxxxxxxxx03": "edge_10cm",
+    "28xxxxxxxxxxxx04": "edge_25cm",
+    "28xxxxxxxxxxxx05": "edge_40cm",
+    "28xxxxxxxxxxxx06": "outdoor"
+  }
+}
