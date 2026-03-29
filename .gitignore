@@ -1,0 +1,16 @@
+# 認証情報・設定ファイル（絶対にコミットしない）
+pico/config.py
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# KiCAD
+kicad/*.bak
+kicad/*-backups/
+kicad/_autosave-*
+
+# OS
+.DS_Store
+Thumbs.db
