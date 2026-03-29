@@ -24,8 +24,7 @@ PIN_SD_SCK  = 18
 PIN_SD_MOSI = 19
 PIN_SD_MISO = 16
 PIN_SD_CS   = 17
-PIN_BUS1    = 21   # 中央地点センサーバス
-PIN_BUS2    = 22   # エッジ地点センサーバス
+PIN_BUS     = 28   # 1-Wire バス（全センサー共通）
 PIN_LED_TX  = 15   # データ送信時 LED
 
 # --- センサーIDとラベルのマッピング ---
@@ -36,6 +35,7 @@ SENSOR_MAP = {
     config.ID_EDGE_10:   "edge_10cm",
     config.ID_EDGE_25:   "edge_25cm",
     config.ID_EDGE_40:   "edge_40cm",
+    config.ID_OUTDOOR:   "outdoor",
 }
 
 INTERVAL_SEC = 600  # 計測間隔（10分）
@@ -98,12 +98,10 @@ def _exists(path):
 # --- センサー読み取り ---
 def read_sensors():
     results = {}
-    for pin_num in [PIN_BUS1, PIN_BUS2]:
-        ow  = onewire.OneWire(machine.Pin(pin_num))
-        ds  = ds18x20.DS18X20(ow)
-        roms = ds.scan()
-        if not roms:
-            continue
+    ow   = onewire.OneWire(machine.Pin(PIN_BUS))
+    ds   = ds18x20.DS18X20(ow)
+    roms = ds.scan()
+    if roms:
         ds.convert_temp()
         time.sleep_ms(750)
         for rom in roms:

@@ -18,11 +18,11 @@ MQTT_PORT   = 1883
 ZONE = "zone-a"
 
 # DS18B20 センサーID（scan_ids.py を実行して取得してください）
-# 中央地点（GP21バス）
-ID_CENTER_10 = "28xxxxxx"    # 深度10cm
-ID_CENTER_25 = "28yyyyyy"    # 深度25cm
-ID_CENTER_40 = "28zzzzzz"    # 深度40cm
-# エッジ地点（GP22バス）
-ID_EDGE_10   = "28aaaaaa"    # 深度10cm
-ID_EDGE_25   = "28bbbbbb"    # 深度25cm
-ID_EDGE_40   = "28cccccc"    # 深度40cm
+# 全センサー GP28 バス共通
+ID_CENTER_10 = "28xxxxxx"    # 中央 10cm
+ID_CENTER_25 = "28yyyyyy"    # 中央 25cm
+ID_CENTER_40 = "28zzzzzz"    # 中央 40cm
+ID_EDGE_10   = "28aaaaaa"    # エッジ 10cm
+ID_EDGE_25   = "28bbbbbb"    # エッジ 25cm
+ID_EDGE_40   = "28cccccc"    # エッジ 40cm
+ID_OUTDOOR   = "28dddddd"    # 外気温（区Aのみ）
