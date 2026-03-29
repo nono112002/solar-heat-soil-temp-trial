@@ -80,16 +80,17 @@ def _exists(path):
         return False
 
 
-def log_to_sd(ts, zone, data):
+def log_to_sd(ts, zone, data, sensor_map):
     fname = "/sd/{}_log_{:04d}{:02d}{:02d}.csv".format(zone, ts[0], ts[1], ts[2])
+    labels = sorted(sensor_map.values())  # 列順を常に固定
     need_header = not _exists(fname)
     try:
         with open(fname, "a") as f:
             if need_header:
-                f.write("datetime,label,temp_c\n")
+                f.write("datetime," + ",".join(labels) + "\n")
             dt = "{:04d}-{:02d}-{:02d} {:02d}:{:02d}:{:02d}".format(*ts[:6])
-            for label, temp in data.items():
-                f.write("{},{},{:.2f}\n".format(dt, label, temp))
+            row = [dt] + ["{:.2f}".format(data[l]) if l in data else "" for l in labels]
+            f.write(",".join(row) + "\n")
         print("[SD] OK -> {}".format(fname))
     except Exception as e:
         print("[SD] ERROR:", e)
@@ -221,7 +222,7 @@ while True:
     data = read_sensors(sensor_map)
     print(ts[:6], data)
 
-    log_to_sd(ts, zone, data)
+    log_to_sd(ts, zone, data, sensor_map)
 
     # WiFi ON → 送信 → WiFi OFF
     if connect_wifi():
