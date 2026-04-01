@@ -28,7 +28,7 @@ PIN_SD_MOSI   = 3
 PIN_SD_MISO   = 4
 PIN_SD_CS     = 5
 PIN_SD_DETECT = 6    # カード検出（挿入時 LOW）
-PIN_BUS       = 28   # 1-Wire バス（全センサー共通）
+PIN_BUS       = 7    # 1-Wire バス（全センサー共通）
 PIN_LED_TX    = 15   # データ送信時 LED
 
 INTERVAL_SEC = 30    # 計測間隔（秒）※デバッグ用 / 本番は1800
@@ -44,9 +44,8 @@ def is_sd_inserted():
 
 
 def mount_sd():
-    # カード検出は PCB 実装後に有効化
-    # if not is_sd_inserted():
-    #     raise OSError("SD card not inserted (card detect = HIGH)")
+    if not is_sd_inserted():
+        raise OSError("SD card not inserted (card detect = HIGH)")
     try:
         spi = machine.SPI(0,
             sck=machine.Pin(PIN_SD_SCK),
