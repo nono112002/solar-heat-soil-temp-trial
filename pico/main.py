@@ -27,7 +27,7 @@ PIN_SD_SCK    = 2
 PIN_SD_MOSI   = 3
 PIN_SD_MISO   = 4
 PIN_SD_CS     = 5
-PIN_SD_DETECT = 20   # カード検出（挿入時 LOW）
+PIN_SD_DETECT = 6    # カード検出（挿入時 LOW）
 PIN_BUS       = 28   # 1-Wire バス（全センサー共通）
 PIN_LED_TX    = 15   # データ送信時 LED
 
