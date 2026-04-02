@@ -1,9 +1,9 @@
 """
 Raspberry Pi Pico W - 太陽熱養生 温度ロガー
-機能: DS18B20 複数センサ / SDカード記録 / Ambient送信 / MQTT送信
+機能: DS18B20 個別GPIO / SDカード記録 / Ambient送信 / MQTT送信
 
-センサーマッピングは SD カードの sensor_map.json で管理
-  {"zone": "zone-a", "sensors": {"<ID>": "<label>", ...}}
+各センサーは専用GPIOピンに直結（1-Wire バス方式廃止）
+ゾーン名は config.py の ZONE 変数で管理
 """
 import machine
 import onewire
@@ -28,10 +28,21 @@ PIN_SD_MOSI   = 3
 PIN_SD_MISO   = 4
 PIN_SD_CS     = 5
 PIN_SD_DETECT = 6    # カード検出（挿入時 LOW）
-PIN_BUS       = 7    # 1-Wire バス（全センサー共通）
 PIN_LED_TX    = 15   # データ送信時 LED
 
-INTERVAL_SEC = 30    # 計測間隔（秒）※デバッグ用 / 本番は1800
+# DS18B20 個別GPIO（ピン番号 → センサーラベル）
+# 各ピンに1センサー専用接続。IDスキャン・sensor_map不要。
+SENSOR_PINS = {
+    8:  "S1_center_10cm",
+    9:  "S2_center_25cm",
+    10: "S3_center_40cm",
+    11: "S4_edge_10cm",
+    12: "S5_edge_25cm",
+    13: "S6_edge_40cm",
+    14: "S7_outdoor",
+}
+
+INTERVAL_SEC = 1800  # 計測間隔（秒）/ デバッグ時は30
 TIME_OFFSET  = 9 * 3600  # JST (UTC+9)
 
 led_tx    = machine.Pin(PIN_LED_TX, machine.Pin.OUT)
@@ -57,20 +68,6 @@ def mount_sd():
         raise OSError("SD mount failed (contact error?): {}".format(e))
 
 
-def load_sensor_map():
-    """SDカードの sensor_map.json からゾーンとIDマッピングを読み込む"""
-    try:
-        with open("/sd/sensor_map.json", "r") as f:
-            data = ujson.load(f)
-        zone       = data.get("zone", "unknown")
-        sensor_map = data.get("sensors", {})
-        print("sensor_map loaded: zone={} / {} sensors".format(zone, len(sensor_map)))
-        return zone, sensor_map
-    except Exception as e:
-        print("sensor_map.json load error:", e)
-        return "unknown", {}
-
-
 def _exists(path):
     try:
         os.stat(path)
@@ -79,15 +76,16 @@ def _exists(path):
         return False
 
 
-def log_to_sd(ts, zone, data, sensor_map):
-    fname = "/sd/{}_log_{:04d}{:02d}{:02d}.csv".format(zone, ts[0], ts[1], ts[2])
-    labels = sorted(sensor_map.values())  # 列順を常に固定
+def log_to_sd(ts, data):
+    zone   = config.ZONE
+    fname  = "/sd/{}_log_{:04d}{:02d}{:02d}.csv".format(zone, ts[0], ts[1], ts[2])
+    labels = [SENSOR_PINS[p] for p in sorted(SENSOR_PINS)]
     need_header = not _exists(fname)
     try:
         with open(fname, "a") as f:
             if need_header:
                 f.write("datetime," + ",".join(labels) + "\n")
-            dt = "{:04d}-{:02d}-{:02d} {:02d}:{:02d}:{:02d}".format(*ts[:6])
+            dt  = "{:04d}-{:02d}-{:02d} {:02d}:{:02d}:{:02d}".format(*ts[:6])
             row = [dt] + ["{:.2f}".format(data[l]) if l in data else "" for l in labels]
             f.write(",".join(row) + "\n")
         print("[SD] OK -> {}".format(fname))
@@ -132,20 +130,30 @@ def jst_time():
 
 
 # --- センサー読み取り ---
-def read_sensors(sensor_map):
+def read_sensors():
+    """全センサーの変換を同時に開始し、750ms後に一括読み取り"""
+    instances = {}
+    for pin_num, label in SENSOR_PINS.items():
+        try:
+            ow   = onewire.OneWire(machine.Pin(pin_num))
+            ds   = ds18x20.DS18X20(ow)
+            roms = ds.scan()
+            if not roms:
+                print("[SENSOR] GP{} no sensor".format(pin_num))
+                continue
+            ds.convert_temp()
+            instances[pin_num] = (ds, roms[0], label)
+        except Exception as e:
+            print("[SENSOR] GP{} scan error: {}".format(pin_num, e))
+
+    time.sleep_ms(750)  # 全センサー変換完了待ち（1回のみ）
+
     results = {}
-    ow   = onewire.OneWire(machine.Pin(PIN_BUS))
-    ds   = ds18x20.DS18X20(ow)
-    roms = ds.scan()
-    if not roms:
-        print("No sensors found")
-        return results
-    ds.convert_temp()
-    time.sleep_ms(750)
-    for rom in roms:
-        id_str = ''.join(['{:02x}'.format(b) for b in rom])
-        label  = sensor_map.get(id_str, "unknown_" + id_str[:8])
-        results[label] = ds.read_temp(rom)
+    for pin_num, (ds, rom, label) in instances.items():
+        try:
+            results[label] = ds.read_temp(rom)
+        except Exception as e:
+            print("[SENSOR] GP{} read error: {}".format(pin_num, e))
     return results
 
 
@@ -153,10 +161,11 @@ def read_sensors(sensor_map):
 def send_ambient(data):
     try:
         import urequests
-        keys    = sorted(data.keys())
+        labels  = [SENSOR_PINS[p] for p in sorted(SENSOR_PINS)]
         payload = {"writeKey": config.AMBIENT_WRITE_KEY}
-        for i, key in enumerate(keys[:8]):
-            payload["d{}".format(i + 1)] = round(data[key], 2)
+        for i, label in enumerate(labels[:8]):
+            if label in data:
+                payload["d{}".format(i + 1)] = round(data[label], 2)
         url = "http://ambidata.io/api/v2/channels/{}/data".format(config.AMBIENT_CHANNEL_ID)
         res = urequests.post(url,
                              headers={"Content-Type": "application/json"},
@@ -170,10 +179,11 @@ def send_ambient(data):
 
 
 # --- MQTT ---
-def send_mqtt(ts, zone, data):
+def send_mqtt(ts, data):
     if not MQTT_AVAILABLE:
         return False
     try:
+        zone   = config.ZONE
         client = MQTTClient("pico_{}".format(zone), config.MQTT_BROKER, port=config.MQTT_PORT)
         client.connect()
         dt = "{:04d}-{:02d}-{:02d}T{:02d}:{:02d}:{:02d}".format(*ts[:6])
@@ -208,8 +218,6 @@ except OSError as e:
     print("ERROR:", e)
     raise  # 起動停止
 
-zone, sensor_map = load_sensor_map()
-
 # 初回のみNTP同期
 if connect_wifi():
     sync_ntp()
@@ -218,14 +226,14 @@ if connect_wifi():
 # --- メインループ ---
 while True:
     ts   = jst_time()
-    data = read_sensors(sensor_map)
+    data = read_sensors()
     print(ts[:6], data)
 
-    log_to_sd(ts, zone, data, sensor_map)
+    log_to_sd(ts, data)
 
     # WiFi ON → 送信 → WiFi OFF
     if connect_wifi():
-        ok_mqtt    = send_mqtt(ts, zone, data)
+        ok_mqtt    = send_mqtt(ts, data)
         ok_ambient = send_ambient(data)
         wifi_off()
         if ok_mqtt or ok_ambient:
