@@ -3264,6 +3264,16 @@
 	)
 	(wire
 		(pts
+			(xy 229.87 29.21) (xy 252.73 29.21)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "077d2e82-df75-4455-9e31-c0d2c1620459")
+	)
+	(wire
+		(pts
 			(xy 205.74 116.84) (xy 213.36 116.84)
 		)
 		(stroke
@@ -3391,16 +3401,6 @@
 			(type default)
 		)
 		(uuid "18c66540-1141-4ee8-8ffb-7faf63fea6fb")
-	)
-	(wire
-		(pts
-			(xy 264.16 26.67) (xy 264.16 33.02)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "1944bffa-d57c-4489-8472-c409c6034499")
 	)
 	(wire
 		(pts
@@ -3684,6 +3684,16 @@
 	)
 	(wire
 		(pts
+			(xy 229.87 26.67) (xy 237.49 26.67)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "5455a47a-2947-4d29-8dce-78c63ff498fa")
+	)
+	(wire
+		(pts
 			(xy 111.76 109.22) (xy 111.76 114.3)
 		)
 		(stroke
@@ -3771,16 +3781,6 @@
 			(type default)
 		)
 		(uuid "61b06733-f0f3-40b0-9924-e3cac2fddbc5")
-	)
-	(wire
-		(pts
-			(xy 229.87 26.67) (xy 264.16 26.67)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "6584b799-df02-4fcd-a60e-0855a0ab7f37")
 	)
 	(wire
 		(pts
@@ -4304,16 +4304,6 @@
 	)
 	(wire
 		(pts
-			(xy 229.87 29.21) (xy 237.49 29.21)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "f85149d2-f813-40f9-b298-1e7f21063e83")
-	)
-	(wire
-		(pts
 			(xy 64.77 41.91) (xy 64.77 46.99)
 		)
 		(stroke
@@ -4383,7 +4373,7 @@
 		(uuid "13113f4f-bf98-4b31-ac17-d1d3e08d812a")
 	)
 	(label "SD_CD"
-		(at 237.49 29.21 0)
+		(at 237.49 26.67 0)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -4806,7 +4796,7 @@
 				(justify right)
 			)
 		)
-		(property "Footprint" ""
+		(property "Footprint" "Connector_Phoenix_SPT:PhoenixContact_SPT_1.5_2-H-3.5_1x02_P3.5mm_Horizontal"
 			(at 46.99 25.4 0)
 			(effects
 				(font
@@ -4876,7 +4866,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" ""
+		(property "Footprint" "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P7.62mm_Horizontal"
 			(at 186.182 62.23 90)
 			(effects
 				(font
@@ -4946,7 +4936,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" ""
+		(property "Footprint" "Connector_JST:JST_PH_B3B-PH-K_1x03_P2.00mm_Vertical"
 			(at 119.38 168.91 0)
 			(effects
 				(font
@@ -5019,7 +5009,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" ""
+		(property "Footprint" "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P7.62mm_Horizontal"
 			(at 55.372 114.3 90)
 			(effects
 				(font
@@ -5155,7 +5145,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" ""
+		(property "Footprint" "Diode_THT:D_DO-201AD_P15.24mm_Horizontal"
 			(at 38.1 36.83 0)
 			(effects
 				(font
@@ -5225,7 +5215,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" ""
+		(property "Footprint" "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P7.62mm_Horizontal"
 			(at 55.372 91.44 90)
 			(effects
 				(font
@@ -5360,7 +5350,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" ""
+		(property "Footprint" "Capacitor_THT:C_Disc_D5.0mm_W2.5mm_P5.00mm"
 			(at 130.5052 49.53 0)
 			(effects
 				(font
@@ -5496,7 +5486,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" ""
+		(property "Footprint" "Connector_JST:JST_PH_B3B-PH-K_1x03_P2.00mm_Vertical"
 			(at 68.58 168.91 0)
 			(effects
 				(font
@@ -5609,7 +5599,7 @@
 	)
 	(symbol
 		(lib_id "power:GND")
-		(at 264.16 33.02 0)
+		(at 252.73 29.21 0)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -5618,7 +5608,7 @@
 		(fields_autoplaced yes)
 		(uuid "3a5f94f0-2141-4ecc-b800-236f6cca7b7b")
 		(property "Reference" "#PWR05"
-			(at 264.16 39.37 0)
+			(at 252.73 35.56 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -5627,7 +5617,7 @@
 			)
 		)
 		(property "Value" "GND"
-			(at 264.16 38.1 0)
+			(at 252.73 34.29 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -5635,7 +5625,7 @@
 			)
 		)
 		(property "Footprint" ""
-			(at 264.16 33.02 0)
+			(at 252.73 29.21 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -5644,7 +5634,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 264.16 33.02 0)
+			(at 252.73 29.21 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -5653,7 +5643,7 @@
 			)
 		)
 		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
-			(at 264.16 33.02 0)
+			(at 252.73 29.21 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -5833,7 +5823,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" ""
+		(property "Footprint" "Varistor:RV_Disc_D9mm_W3.4mm_P5mm"
 			(at 48.26 54.61 0)
 			(effects
 				(font
@@ -5968,7 +5958,7 @@
 				)
 			)
 		)
-		(property "Footprint" ""
+		(property "Footprint" "Button_Switch_THT:SW_Slide-03_Wuerth-WS-SLTV_10x2.5x6.4_P2.54mm"
 			(at 57.15 63.5 0)
 			(effects
 				(font
@@ -6107,7 +6097,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" ""
+		(property "Footprint" "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P7.62mm_Horizontal"
 			(at 102.362 139.7 90)
 			(effects
 				(font
@@ -6241,7 +6231,7 @@
 				)
 			)
 		)
-		(property "Footprint" ""
+		(property "Footprint" "LED_THT:LED_D3.0mm"
 			(at 191.77 52.07 0)
 			(effects
 				(font
@@ -6320,7 +6310,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" ""
+		(property "Footprint" "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P7.62mm_Horizontal"
 			(at 55.372 139.7 90)
 			(effects
 				(font
@@ -6588,7 +6578,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" ""
+		(property "Footprint" "Connector_JST:JST_PH_B3B-PH-K_1x03_P2.00mm_Vertical"
 			(at 68.58 95.25 0)
 			(effects
 				(font
@@ -6661,7 +6651,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" ""
+		(property "Footprint" "Capacitor_THT:C_Disc_D5.0mm_W2.5mm_P5.00mm"
 			(at 154.6352 49.53 0)
 			(effects
 				(font
@@ -6731,7 +6721,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "Module:RaspberryPi_Pico_W_SMD_HandSolder"
+		(property "Footprint" "Module:RaspberryPi_Pico_Common_THT"
 			(at 182.88 151.13 0)
 			(effects
 				(font
@@ -7052,7 +7042,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" ""
+		(property "Footprint" "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P7.62mm_Horizontal"
 			(at 154.432 134.62 90)
 			(effects
 				(font
@@ -7122,7 +7112,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" ""
+		(property "Footprint" "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P7.62mm_Horizontal"
 			(at 103.632 165.1 90)
 			(effects
 				(font
@@ -7258,7 +7248,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" ""
+		(property "Footprint" "Capacitor_THT:CP_Radial_D5.0mm_P2.00mm"
 			(at 168.6052 49.53 0)
 			(effects
 				(font
@@ -7394,7 +7384,7 @@
 				(justify right)
 			)
 		)
-		(property "Footprint" ""
+		(property "Footprint" "LED_THT:LED_D3.0mm"
 			(at 156.21 142.24 0)
 			(effects
 				(font
@@ -7473,7 +7463,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" ""
+		(property "Footprint" "Connector_JST:JST_PH_B3B-PH-K_1x03_P2.00mm_Vertical"
 			(at 118.11 143.51 0)
 			(effects
 				(font
@@ -7586,16 +7576,16 @@
 	)
 	(symbol
 		(lib_id "Connector_Generic:Conn_01x10")
-		(at 224.79 39.37 180)
+		(at 224.79 36.83 0)
+		(mirror y)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(fields_autoplaced yes)
 		(uuid "c8514d09-8aeb-407d-a0ad-70d775eaee58")
 		(property "Reference" "J9"
-			(at 224.79 20.32 0)
+			(at 224.79 55.88 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -7603,15 +7593,15 @@
 			)
 		)
 		(property "Value" "Conn_01x10"
-			(at 224.79 22.86 0)
+			(at 224.79 53.34 0)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
 			)
 		)
-		(property "Footprint" ""
-			(at 224.79 39.37 0)
+		(property "Footprint" "Connector_PinSocket_2.54mm:PinSocket_1x10_P2.54mm_Vertical"
+			(at 224.79 36.83 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -7620,7 +7610,7 @@
 			)
 		)
 		(property "Datasheet" "~"
-			(at 224.79 39.37 0)
+			(at 224.79 36.83 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -7629,7 +7619,7 @@
 			)
 		)
 		(property "Description" "Generic connector, single row, 01x10, script generated (kicad-library-utils/schlib/autogen/connector/)"
-			(at 224.79 39.37 0)
+			(at 224.79 36.83 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -7704,7 +7694,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" ""
+		(property "Footprint" "Connector_JST:JST_PH_B3B-PH-K_1x03_P2.00mm_Vertical"
 			(at 68.58 143.51 0)
 			(effects
 				(font
@@ -7777,7 +7767,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" ""
+		(property "Footprint" "Connector_JST:JST_PH_B3B-PH-K_1x03_P2.00mm_Vertical"
 			(at 118.11 116.84 0)
 			(effects
 				(font
@@ -7848,7 +7838,7 @@
 				)
 			)
 		)
-		(property "Footprint" ""
+		(property "Footprint" "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P7.62mm_Horizontal"
 			(at 218.44 113.538 90)
 			(effects
 				(font
@@ -7918,7 +7908,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" ""
+		(property "Footprint" "Connector_JST:JST_PH_B3B-PH-K_1x03_P2.00mm_Vertical"
 			(at 68.58 118.11 0)
 			(effects
 				(font
@@ -8056,7 +8046,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" ""
+		(property "Footprint" "Capacitor_THT:CP_Radial_D6.3mm_P2.50mm"
 			(at 105.1052 52.07 0)
 			(effects
 				(font
@@ -8192,7 +8182,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" ""
+		(property "Footprint" "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P7.62mm_Horizontal"
 			(at 54.102 165.1 90)
 			(effects
 				(font
@@ -8260,7 +8250,7 @@
 				)
 			)
 		)
-		(property "Footprint" ""
+		(property "Footprint" "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P7.62mm_Horizontal"
 			(at 218.44 124.968 90)
 			(effects
 				(font
@@ -8330,7 +8320,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" ""
+		(property "Footprint" "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P7.62mm_Horizontal"
 			(at 101.092 113.03 90)
 			(effects
 				(font
