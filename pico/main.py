@@ -29,6 +29,10 @@ PIN_SD_MISO   = 4
 PIN_SD_CS     = 5
 PIN_SD_DETECT = 6    # カード検出（挿入時 LOW）
 PIN_LED_TX    = 15   # データ送信時 LED
+PIN_POWER_MON = 26   # 主電源監視 ADC（10kΩ/10kΩ分圧）
+
+# 5V入力時: GP26 = 2.5V。閾値4.0V入力 → GP26 = 2.0V
+POWER_THRESHOLD_V = 4.0   # この電圧を下回ったらアラート（入力電圧換算）
 
 # DS18B20 個別GPIO（ピン番号 → センサーラベル）
 # 各ピンに1センサー専用接続。IDスキャン・sensor_map不要。
@@ -47,6 +51,7 @@ TIME_OFFSET  = 9 * 3600  # JST (UTC+9)
 
 led_tx    = machine.Pin(PIN_LED_TX, machine.Pin.OUT)
 sd_detect = machine.Pin(PIN_SD_DETECT, machine.Pin.IN, machine.Pin.PULL_UP)
+adc_power = machine.ADC(PIN_POWER_MON)
 
 
 # --- SDカード ---
@@ -199,6 +204,29 @@ def send_mqtt(ts, data):
         return False
 
 
+# --- 電源監視 ---
+def read_bus_voltage():
+    """ADC値から入力バス電圧を計算して返す（10kΩ/10kΩ分圧）"""
+    adc_v = adc_power.read_u16() / 65535 * 3.3
+    return adc_v * 2  # 分圧比 = 1/2
+
+
+def send_power_alert(bus_v):
+    if not MQTT_AVAILABLE:
+        print("[PowerAlert] MQTT unavailable")
+        return
+    try:
+        zone   = config.ZONE
+        client = MQTTClient("pico_{}_alert".format(zone), config.MQTT_BROKER, port=config.MQTT_PORT)
+        client.connect()
+        payload = ujson.dumps({"zone": zone, "bus_v": round(bus_v, 2), "alert": "main_power_lost"})
+        client.publish("solar-heat/{}/power_alert".format(zone), payload)
+        client.disconnect()
+        print("[PowerAlert] sent bus_v={}V".format(round(bus_v, 2)))
+    except Exception as e:
+        print("[PowerAlert] ERROR:", e)
+
+
 # --- LED ---
 def blink(n=2):
     for _ in range(n):
@@ -225,9 +253,10 @@ if connect_wifi():
 
 # --- メインループ ---
 while True:
-    ts   = jst_time()
-    data = read_sensors()
-    print(ts[:6], data)
+    ts    = jst_time()
+    data  = read_sensors()
+    bus_v = read_bus_voltage()
+    print(ts[:6], data, "bus={}V".format(round(bus_v, 2)))
 
     log_to_sd(ts, data)
 
@@ -235,6 +264,9 @@ while True:
     if connect_wifi():
         ok_mqtt    = send_mqtt(ts, data)
         ok_ambient = send_ambient(data)
+        if bus_v < POWER_THRESHOLD_V:
+            print("[PowerAlert] bus={}V < {}V".format(round(bus_v, 2), POWER_THRESHOLD_V))
+            send_power_alert(bus_v)
         wifi_off()
         if ok_mqtt or ok_ambient:
             blink(2)
