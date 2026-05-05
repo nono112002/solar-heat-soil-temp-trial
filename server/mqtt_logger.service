@@ -5,9 +5,9 @@ Wants=network-online.target
 
 [Service]
 Type=simple
-User=pi
-Group=pi
-ExecStart=/usr/bin/python3 /home/pi/solar-heat/server/mqtt_logger.py
+User=nono
+Group=nono
+ExecStart=/usr/bin/python3 /home/nono/solar-heat/server/mqtt_logger.py
 Restart=on-failure
 RestartSec=5
 Environment=MQTT_HOST=localhost
