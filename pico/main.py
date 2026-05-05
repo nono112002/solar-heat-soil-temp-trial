@@ -105,18 +105,21 @@ def wifi_off():
 
 
 def connect_wifi():
-    wlan = network.WLAN(network.STA_IF)
-    wlan.active(True)
-    if wlan.isconnected():
-        print("[WiFi] already connected")
-        return True
-    wlan.connect(config.WIFI_SSID, config.WIFI_PASSWORD)
-    for _ in range(20):
-        if wlan.isconnected():
-            print("[WiFi] connected:", wlan.ifconfig()[0])
-            return True
-        time.sleep(1)
-    print("[WiFi] ERROR: connect timeout")
+    """WiFiを一度OFFしてから接続。失敗時は1回リトライ（最大2回試行）"""
+    for attempt in range(1, 3):  # 1回目→失敗時2回目（リトライ）
+        # クリーンな状態から接続するため一度OFFにする
+        wlan = network.WLAN(network.STA_IF)
+        wlan.active(False)
+        time.sleep_ms(500)
+        wlan.active(True)
+        wlan.connect(config.WIFI_SSID, config.WIFI_PASSWORD)
+        for _ in range(20):
+            if wlan.isconnected():
+                print("[WiFi] connected (attempt {}):".format(attempt), wlan.ifconfig()[0])
+                return True
+            time.sleep(1)
+        print("[WiFi] attempt {} timeout".format(attempt))
+    print("[WiFi] ERROR: all attempts failed")
     return False
 
 
