@@ -258,6 +258,12 @@ while True:
     bus_v = read_bus_voltage()
     print(ts[:6], data, "bus={}V".format(round(bus_v, 2)))
 
+    # 電源アラート時は赤LED点灯維持（正常時は消灯）
+    if bus_v < POWER_THRESHOLD_V:
+        led_tx.on()
+    else:
+        led_tx.off()
+
     log_to_sd(ts, data)
 
     # WiFi ON → 送信 → WiFi OFF

@@ -1,5 +1,12 @@
 # 認証情報・設定ファイル（絶対にコミットしない）
 pico/config.py
+.env
+.env.txt
+**/.env
+**/.env.txt
+
+# Claude Code
+.claude/
 
 # Python
 __pycache__/

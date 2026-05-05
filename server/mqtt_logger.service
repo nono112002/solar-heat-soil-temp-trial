@@ -1,0 +1,18 @@
+[Unit]
+Description=Solar-Heat MQTT Logger (Pico -> SQLite)
+After=network-online.target mosquitto.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=pi
+Group=pi
+ExecStart=/usr/bin/python3 /home/pi/solar-heat/server/mqtt_logger.py
+Restart=on-failure
+RestartSec=5
+Environment=MQTT_HOST=localhost
+Environment=MQTT_PORT=1883
+Environment=DB_PATH=/var/lib/solar-heat/data.db
+
+[Install]
+WantedBy=multi-user.target
