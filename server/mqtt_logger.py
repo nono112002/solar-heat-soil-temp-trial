@@ -52,6 +52,17 @@ def init_db(conn: sqlite3.Connection) -> None:
             bus_v       REAL,
             alert       TEXT
         );
+
+        CREATE TABLE IF NOT EXISTS device_status (
+            id            INTEGER PRIMARY KEY AUTOINCREMENT,
+            received_at   TEXT NOT NULL,
+            zone          TEXT NOT NULL,
+            bus_v         REAL,
+            sd_status     TEXT,
+            wifi_attempts INTEGER,
+            uptime_min    INTEGER
+        );
+        CREATE INDEX IF NOT EXISTS idx_status_zone_ts ON device_status(zone, received_at);
         """
     )
     conn.commit()
@@ -94,6 +105,22 @@ def on_message(client, userdata, msg):
                 (received_at, zone, payload.get("bus_v"), payload.get("alert")),
             )
             log.info("[ALERT] zone=%s bus_v=%s", zone, payload.get("bus_v"))
+        elif leaf == "status":
+            conn.execute(
+                "INSERT INTO device_status (received_at, zone, bus_v, sd_status, wifi_attempts, uptime_min) "
+                "VALUES (?, ?, ?, ?, ?, ?)",
+                (
+                    received_at,
+                    zone,
+                    payload.get("bus_v"),
+                    payload.get("sd_status"),
+                    payload.get("wifi_attempts"),
+                    payload.get("uptime_min"),
+                ),
+            )
+            log.info("[STATUS] zone=%s sd=%s wifi_att=%s uptime=%smin",
+                     zone, payload.get("sd_status"), payload.get("wifi_attempts"),
+                     payload.get("uptime_min"))
         else:
             conn.execute(
                 "INSERT INTO temperature (timestamp, received_at, zone, label, temp) VALUES (?, ?, ?, ?, ?)",
