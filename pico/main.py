@@ -51,7 +51,7 @@ SENSOR_PINS = {
     14: "S7_outdoor",
 }
 
-INTERVAL_SEC = 1800  # 計測間隔（秒）/ デバッグ時は30
+INTERVAL_SEC = 1800  # 計測間隔（秒）= 30分
 TIME_OFFSET  = 9 * 3600  # JST (UTC+9)
 
 led_tx    = machine.Pin(PIN_LED_TX, machine.Pin.OUT)
@@ -62,7 +62,7 @@ adc_power = machine.ADC(PIN_POWER_MON)
 sd_status = "unknown"           # "ok" / "no_card" / "mount_failed" / "write_failed" / "ok_after_remount"
 sd_mounted = False
 last_wifi_attempts = 0
-boot_time = time.time()
+boot_time = None  # NTP同期後に設定（同期前はNoneのまま）
 
 
 # --- LED ステートマシン（Timer駆動で連続点滅） ---
@@ -73,6 +73,9 @@ LED_FAST_BLINK = 3   # 両方同時（5Hz）
 
 _led_state = LED_OFF
 _led_counter = 0
+
+# センサー状態: {label: True(正常) / False(未検出・読み取りエラー)}
+sensor_status = {}
 
 
 def _led_tick(t):
@@ -251,8 +254,10 @@ def connect_wifi():
 
 # --- NTP ---
 def sync_ntp():
+    global boot_time
     try:
         ntptime.settime()
+        boot_time = time.time()  # NTP同期後に記録（uptime計算の基点）
         print("NTP synced (UTC)")
     except Exception as e:
         print("NTP error:", e)
@@ -264,6 +269,10 @@ def jst_time():
 
 # --- センサー読み取り ---
 def read_sensors():
+    """全センサーを一括読み取り。sensor_status を毎サイクル更新する。
+    True=正常, False=未検出またはエラー"""
+    global sensor_status
+
     instances = {}
     for pin_num, label in SENSOR_PINS.items():
         try:
@@ -272,20 +281,24 @@ def read_sensors():
             roms = ds.scan()
             if not roms:
                 print("[SENSOR] GP{} no sensor".format(pin_num))
+                sensor_status[label] = False
                 continue
             ds.convert_temp()
             instances[pin_num] = (ds, roms[0], label)
         except Exception as e:
             print("[SENSOR] GP{} scan error: {}".format(pin_num, e))
+            sensor_status[label] = False
 
-    time.sleep_ms(750)
+    time.sleep_ms(750)  # 全センサー変換完了待ち（1回のみ）
 
     results = {}
     for pin_num, (ds, rom, label) in instances.items():
         try:
             results[label] = ds.read_temp(rom)
+            sensor_status[label] = True
         except Exception as e:
             print("[SENSOR] GP{} read error: {}".format(pin_num, e))
+            sensor_status[label] = False
     return results
 
 
@@ -331,26 +344,33 @@ def send_mqtt(ts, data):
         return False
 
 
-def send_status(bus_v):
-    """デバイス自身のヘルス状態を送る"""
+def send_status(ts, bus_v):
+    """デバイス自身のヘルス状態を送る。
+    トピック: solar-heat/{zone}/status
+    含む情報: SD状態, センサー正常/異常ラベル, 電源電圧, WiFi試行回数, 起動からの経過時間"""
     if not MQTT_AVAILABLE:
         return
     try:
         zone = config.ZONE
         client = MQTTClient("pico_{}_status".format(zone), config.MQTT_BROKER, port=config.MQTT_PORT)
         client.connect()
-        uptime_min = (time.time() - boot_time) // 60
+        dt = "{:04d}-{:02d}-{:02d}T{:02d}:{:02d}:{:02d}".format(*ts[:6])
+        uptime_min = (time.time() - boot_time) // 60 if boot_time else -1
+        ng_sensors = [l for l, ok in sensor_status.items() if not ok]
         payload = ujson.dumps({
-            "zone": zone,
-            "bus_v": round(bus_v, 2),
-            "sd_status": sd_status,
+            "time":         dt,
+            "zone":         zone,
+            "bus_v":        round(bus_v, 2),
+            "sd_status":    sd_status,
+            "sensors_ok":   len(sensor_status) - len(ng_sensors),
+            "sensors_ng":   ng_sensors,
             "wifi_attempts": last_wifi_attempts,
-            "uptime_min": uptime_min,
+            "uptime_min":   uptime_min,
         })
         client.publish("solar-heat/{}/status".format(zone), payload)
         client.disconnect()
-        print("[Status] sent sd={} wifi_att={} uptime={}min".format(
-            sd_status, last_wifi_attempts, uptime_min))
+        print("[Status] sd={} sensors_ng={} uptime={}min".format(
+            sd_status, ng_sensors, uptime_min))
     except Exception as e:
         print("[Status] ERROR:", e)
 
@@ -418,7 +438,7 @@ while True:
     if connect_wifi():
         ok_mqtt    = send_mqtt(ts, data)
         ok_ambient = send_ambient(data)
-        send_status(bus_v)
+        send_status(ts, bus_v)
         if power_alert:
             print("[PowerAlert] bus={}V < {}V".format(round(bus_v, 2), POWER_THRESHOLD_V))
             send_power_alert(bus_v)
