@@ -10,8 +10,10 @@ Group=nono
 ExecStart=/usr/bin/python3 /home/nono/solar-heat/server/mqtt_logger.py
 Restart=on-failure
 RestartSec=5
-Environment=MQTT_HOST=localhost
+Environment=MQTT_HOST=34.58.138.105
 Environment=MQTT_PORT=1883
+Environment=MQTT_USER=picobox
+Environment=MQTT_PASS=solar-heat-2026
 Environment=DB_PATH=/var/lib/solar-heat/data.db
 
 [Install]

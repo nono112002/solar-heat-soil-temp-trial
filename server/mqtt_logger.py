@@ -20,6 +20,8 @@ import paho.mqtt.client as mqtt
 # --- 設定（環境変数で上書き可能） ---
 MQTT_HOST = os.environ.get("MQTT_HOST", "localhost")
 MQTT_PORT = int(os.environ.get("MQTT_PORT", "1883"))
+MQTT_USER = os.environ.get("MQTT_USER", "")
+MQTT_PASS = os.environ.get("MQTT_PASS", "")
 MQTT_TOPIC = "solar-heat/+/+"
 DB_PATH = Path(os.environ.get("DB_PATH", "/var/lib/solar-heat/data.db"))
 
@@ -150,8 +152,10 @@ def main() -> int:
     )
     client.on_connect = on_connect
     client.on_message = on_message
+    if MQTT_USER:
+        client.username_pw_set(MQTT_USER, MQTT_PASS)
 
-    log.info("Starting MQTT logger (DB: %s)", DB_PATH)
+    log.info("Starting MQTT logger (DB: %s, broker: %s:%d)", DB_PATH, MQTT_HOST, MQTT_PORT)
     client.connect(MQTT_HOST, MQTT_PORT, keepalive=60)
     try:
         client.loop_forever()
