@@ -329,7 +329,8 @@ def send_mqtt(ts, data):
         return False
     try:
         zone   = config.ZONE
-        client = MQTTClient("pico_{}".format(zone), config.MQTT_BROKER, port=config.MQTT_PORT)
+        client = MQTTClient("pico_{}".format(zone), config.MQTT_BROKER, port=config.MQTT_PORT,
+                            user=config.MQTT_USER, password=config.MQTT_PASS)
         client.connect()
         dt = "{:04d}-{:02d}-{:02d}T{:02d}:{:02d}:{:02d}".format(*ts[:6])
         for label, temp in data.items():
@@ -352,7 +353,8 @@ def send_status(ts, bus_v):
         return
     try:
         zone = config.ZONE
-        client = MQTTClient("pico_{}_status".format(zone), config.MQTT_BROKER, port=config.MQTT_PORT)
+        client = MQTTClient("pico_{}_status".format(zone), config.MQTT_BROKER, port=config.MQTT_PORT,
+                            user=config.MQTT_USER, password=config.MQTT_PASS)
         client.connect()
         dt = "{:04d}-{:02d}-{:02d}T{:02d}:{:02d}:{:02d}".format(*ts[:6])
         uptime_min = (time.time() - boot_time) // 60 if boot_time else -1
@@ -386,7 +388,8 @@ def send_power_alert(bus_v):
         return
     try:
         zone   = config.ZONE
-        client = MQTTClient("pico_{}_alert".format(zone), config.MQTT_BROKER, port=config.MQTT_PORT)
+        client = MQTTClient("pico_{}_alert".format(zone), config.MQTT_BROKER, port=config.MQTT_PORT,
+                            user=config.MQTT_USER, password=config.MQTT_PASS)
         client.connect()
         payload = ujson.dumps({"zone": zone, "bus_v": round(bus_v, 2), "alert": "main_power_lost"})
         client.publish("solar-heat/{}/power_alert".format(zone), payload)
