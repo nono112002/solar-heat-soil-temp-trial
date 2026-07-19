@@ -25,6 +25,10 @@ MQTT_PASS = os.environ.get("MQTT_PASS", "")
 MQTT_TOPIC = "solar-heat/+/+"
 DB_PATH = Path(os.environ.get("DB_PATH", "/var/lib/solar-heat/data.db"))
 
+# PicoBox筐体とエリアの入れ替え対応（配線取り回しの都合）
+# Pico1(zone-a送信) → エリアC設置、Pico3(zone-c送信) → エリアA設置
+ZONE_REMAP = {"zone-a": "zone-c", "zone-c": "zone-a"}
+
 # --- ログ ---
 logging.basicConfig(
     level=logging.INFO,
@@ -98,6 +102,7 @@ def on_message(client, userdata, msg):
         log.warning("Unexpected topic: %s", topic)
         return
     _, zone, leaf = parts
+    zone = ZONE_REMAP.get(zone, zone)
     received_at = now_iso()
 
     try:
