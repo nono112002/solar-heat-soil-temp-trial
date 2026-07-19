@@ -44,8 +44,8 @@
       "datasource": { "type": "frser-sqlite-datasource", "uid": "P648C6F40D76405CF" },
       "targets": [
         {
-          "queryText": "SELECT CAST(CAST(unixepoch(received_at)/60 AS INT)*60 AS REAL)*1000 as time, MAX(CASE WHEN label='S1_center_10cm' THEN temp END) as \"S1_center_10cm\", MAX(CASE WHEN label='S2_center_25cm' THEN temp END) as \"S2_center_25cm\", MAX(CASE WHEN label='S3_center_40cm' THEN temp END) as \"S3_center_40cm\", MAX(CASE WHEN label='S4_edge_10cm' THEN temp END) as \"S4_edge_10cm\", MAX(CASE WHEN label='S5_edge_25cm' THEN temp END) as \"S5_edge_25cm\", MAX(CASE WHEN label='S6_edge_40cm' THEN temp END) as \"S6_edge_40cm\", MAX(CASE WHEN label='S7_outdoor' THEN temp END) as \"S7_outdoor\" FROM temperature WHERE zone='zone-a' AND unixepoch(received_at) >= $__from/1000 AND unixepoch(received_at) <= $__to/1000 GROUP BY CAST(unixepoch(received_at)/60 AS INT) ORDER BY time",
-          "rawQueryText": "SELECT CAST(CAST(unixepoch(received_at)/60 AS INT)*60 AS REAL)*1000 as time, MAX(CASE WHEN label='S1_center_10cm' THEN temp END) as \"S1_center_10cm\", MAX(CASE WHEN label='S2_center_25cm' THEN temp END) as \"S2_center_25cm\", MAX(CASE WHEN label='S3_center_40cm' THEN temp END) as \"S3_center_40cm\", MAX(CASE WHEN label='S4_edge_10cm' THEN temp END) as \"S4_edge_10cm\", MAX(CASE WHEN label='S5_edge_25cm' THEN temp END) as \"S5_edge_25cm\", MAX(CASE WHEN label='S6_edge_40cm' THEN temp END) as \"S6_edge_40cm\", MAX(CASE WHEN label='S7_outdoor' THEN temp END) as \"S7_outdoor\" FROM temperature WHERE zone='zone-a' AND unixepoch(received_at) >= $__from/1000 AND unixepoch(received_at) <= $__to/1000 GROUP BY CAST(unixepoch(received_at)/60 AS INT) ORDER BY time",
+          "queryText": "SELECT CAST(CAST(unixepoch(received_at)/60 AS INT)*60 AS REAL)*1000 as time, MAX(CASE WHEN label='S1_center_10cm' THEN temp END) as \"S1_center_10cm(No.2)\", MAX(CASE WHEN label='S2_center_25cm' THEN temp END) as \"S2_center_25cm(No.1)\", MAX(CASE WHEN label='S3_center_40cm' THEN temp END) as \"S3_center_40cm(No.21)\", MAX(CASE WHEN label='S4_edge_10cm' THEN temp END) as \"S4_edge_10cm(No.19)\", MAX(CASE WHEN label='S5_edge_25cm' THEN temp END) as \"S5_edge_25cm(No.20)\", MAX(CASE WHEN label='S6_edge_40cm' THEN temp END) as \"S6_edge_40cm(No.18)\", MAX(CASE WHEN label='S7_outdoor' THEN temp END) as \"S7_outdoor(No.36)\" FROM temperature WHERE zone='zone-a' AND unixepoch(received_at) >= $__from/1000 AND unixepoch(received_at) <= $__to/1000 GROUP BY CAST(unixepoch(received_at)/60 AS INT) ORDER BY time",
+          "rawQueryText": "SELECT CAST(CAST(unixepoch(received_at)/60 AS INT)*60 AS REAL)*1000 as time, MAX(CASE WHEN label='S1_center_10cm' THEN temp END) as \"S1_center_10cm(No.2)\", MAX(CASE WHEN label='S2_center_25cm' THEN temp END) as \"S2_center_25cm(No.1)\", MAX(CASE WHEN label='S3_center_40cm' THEN temp END) as \"S3_center_40cm(No.21)\", MAX(CASE WHEN label='S4_edge_10cm' THEN temp END) as \"S4_edge_10cm(No.19)\", MAX(CASE WHEN label='S5_edge_25cm' THEN temp END) as \"S5_edge_25cm(No.20)\", MAX(CASE WHEN label='S6_edge_40cm' THEN temp END) as \"S6_edge_40cm(No.18)\", MAX(CASE WHEN label='S7_outdoor' THEN temp END) as \"S7_outdoor(No.36)\" FROM temperature WHERE zone='zone-a' AND unixepoch(received_at) >= $__from/1000 AND unixepoch(received_at) <= $__to/1000 GROUP BY CAST(unixepoch(received_at)/60 AS INT) ORDER BY time",
           "queryType": "table",
           "refId": "A"
         }
@@ -60,7 +60,7 @@
         },
         "overrides": [
           {
-            "matcher": { "id": "byName", "options": "S7_outdoor" },
+            "matcher": { "id": "byName", "options": "S7_outdoor(No.36)" },
             "properties": [
               { "id": "custom.lineStyle", "value": { "fill": "dash", "dash": [10, 10] } },
               { "id": "color", "value": { "mode": "fixed", "fixedColor": "semi-dark-orange" } }
@@ -81,8 +81,8 @@
       "datasource": { "type": "frser-sqlite-datasource", "uid": "P648C6F40D76405CF" },
       "targets": [
         {
-          "queryText": "SELECT CAST(CAST(unixepoch(received_at)/60 AS INT)*60 AS REAL)*1000 as time, MAX(CASE WHEN label='S1_center_10cm' THEN temp END) as \"S1_center_10cm\", MAX(CASE WHEN label='S2_center_25cm' THEN temp END) as \"S2_center_25cm\", MAX(CASE WHEN label='S3_center_40cm' THEN temp END) as \"S3_center_40cm\", MAX(CASE WHEN label='S4_edge_10cm' THEN temp END) as \"S4_edge_10cm\", MAX(CASE WHEN label='S5_edge_25cm' THEN temp END) as \"S5_edge_25cm\", MAX(CASE WHEN label='S6_edge_40cm' THEN temp END) as \"S6_edge_40cm\", MAX(CASE WHEN label='S7_outdoor' THEN temp END) as \"S7_outdoor\" FROM temperature WHERE zone='zone-b' AND unixepoch(received_at) >= $__from/1000 AND unixepoch(received_at) <= $__to/1000 GROUP BY CAST(unixepoch(received_at)/60 AS INT) ORDER BY time",
-          "rawQueryText": "SELECT CAST(CAST(unixepoch(received_at)/60 AS INT)*60 AS REAL)*1000 as time, MAX(CASE WHEN label='S1_center_10cm' THEN temp END) as \"S1_center_10cm\", MAX(CASE WHEN label='S2_center_25cm' THEN temp END) as \"S2_center_25cm\", MAX(CASE WHEN label='S3_center_40cm' THEN temp END) as \"S3_center_40cm\", MAX(CASE WHEN label='S4_edge_10cm' THEN temp END) as \"S4_edge_10cm\", MAX(CASE WHEN label='S5_edge_25cm' THEN temp END) as \"S5_edge_25cm\", MAX(CASE WHEN label='S6_edge_40cm' THEN temp END) as \"S6_edge_40cm\", MAX(CASE WHEN label='S7_outdoor' THEN temp END) as \"S7_outdoor\" FROM temperature WHERE zone='zone-b' AND unixepoch(received_at) >= $__from/1000 AND unixepoch(received_at) <= $__to/1000 GROUP BY CAST(unixepoch(received_at)/60 AS INT) ORDER BY time",
+          "queryText": "SELECT CAST(CAST(unixepoch(received_at)/60 AS INT)*60 AS REAL)*1000 as time, MAX(CASE WHEN label='S1_center_10cm' THEN temp END) as \"S1_center_10cm(No.12)\", MAX(CASE WHEN label='S2_center_25cm' THEN temp END) as \"S2_center_25cm(No.13)\", MAX(CASE WHEN label='S3_center_40cm' THEN temp END) as \"S3_center_40cm(No.14)\", MAX(CASE WHEN label='S4_edge_10cm' THEN temp END) as \"S4_edge_10cm(No.11)\", MAX(CASE WHEN label='S5_edge_25cm' THEN temp END) as \"S5_edge_25cm(No.15)\", MAX(CASE WHEN label='S6_edge_40cm' THEN temp END) as \"S6_edge_40cm(No.16)\", MAX(CASE WHEN label='S7_outdoor' THEN temp END) as \"S7_outdoor(No.17)\" FROM temperature WHERE zone='zone-b' AND unixepoch(received_at) >= $__from/1000 AND unixepoch(received_at) <= $__to/1000 GROUP BY CAST(unixepoch(received_at)/60 AS INT) ORDER BY time",
+          "rawQueryText": "SELECT CAST(CAST(unixepoch(received_at)/60 AS INT)*60 AS REAL)*1000 as time, MAX(CASE WHEN label='S1_center_10cm' THEN temp END) as \"S1_center_10cm(No.12)\", MAX(CASE WHEN label='S2_center_25cm' THEN temp END) as \"S2_center_25cm(No.13)\", MAX(CASE WHEN label='S3_center_40cm' THEN temp END) as \"S3_center_40cm(No.14)\", MAX(CASE WHEN label='S4_edge_10cm' THEN temp END) as \"S4_edge_10cm(No.11)\", MAX(CASE WHEN label='S5_edge_25cm' THEN temp END) as \"S5_edge_25cm(No.15)\", MAX(CASE WHEN label='S6_edge_40cm' THEN temp END) as \"S6_edge_40cm(No.16)\", MAX(CASE WHEN label='S7_outdoor' THEN temp END) as \"S7_outdoor(No.17)\" FROM temperature WHERE zone='zone-b' AND unixepoch(received_at) >= $__from/1000 AND unixepoch(received_at) <= $__to/1000 GROUP BY CAST(unixepoch(received_at)/60 AS INT) ORDER BY time",
           "queryType": "table",
           "refId": "A"
         }
@@ -97,7 +97,7 @@
         },
         "overrides": [
           {
-            "matcher": { "id": "byName", "options": "S7_outdoor" },
+            "matcher": { "id": "byName", "options": "S7_outdoor(No.17)" },
             "properties": [
               { "id": "custom.lineStyle", "value": { "fill": "dash", "dash": [10, 10] } },
               { "id": "color", "value": { "mode": "fixed", "fixedColor": "semi-dark-orange" } }
@@ -118,8 +118,8 @@
       "datasource": { "type": "frser-sqlite-datasource", "uid": "P648C6F40D76405CF" },
       "targets": [
         {
-          "queryText": "SELECT CAST(CAST(unixepoch(received_at)/60 AS INT)*60 AS REAL)*1000 as time, MAX(CASE WHEN label='S1_center_10cm' THEN temp END) as \"S1_center_10cm\", MAX(CASE WHEN label='S2_center_25cm' THEN temp END) as \"S2_center_25cm\", MAX(CASE WHEN label='S3_center_40cm' THEN temp END) as \"S3_center_40cm\", MAX(CASE WHEN label='S4_edge_10cm' THEN temp END) as \"S4_edge_10cm\", MAX(CASE WHEN label='S5_edge_25cm' THEN temp END) as \"S5_edge_25cm\", MAX(CASE WHEN label='S6_edge_40cm' THEN temp END) as \"S6_edge_40cm\", MAX(CASE WHEN label='S7_outdoor' THEN temp END) as \"S7_outdoor\" FROM temperature WHERE zone='zone-c' AND unixepoch(received_at) >= $__from/1000 AND unixepoch(received_at) <= $__to/1000 GROUP BY CAST(unixepoch(received_at)/60 AS INT) ORDER BY time",
-          "rawQueryText": "SELECT CAST(CAST(unixepoch(received_at)/60 AS INT)*60 AS REAL)*1000 as time, MAX(CASE WHEN label='S1_center_10cm' THEN temp END) as \"S1_center_10cm\", MAX(CASE WHEN label='S2_center_25cm' THEN temp END) as \"S2_center_25cm\", MAX(CASE WHEN label='S3_center_40cm' THEN temp END) as \"S3_center_40cm\", MAX(CASE WHEN label='S4_edge_10cm' THEN temp END) as \"S4_edge_10cm\", MAX(CASE WHEN label='S5_edge_25cm' THEN temp END) as \"S5_edge_25cm\", MAX(CASE WHEN label='S6_edge_40cm' THEN temp END) as \"S6_edge_40cm\", MAX(CASE WHEN label='S7_outdoor' THEN temp END) as \"S7_outdoor\" FROM temperature WHERE zone='zone-c' AND unixepoch(received_at) >= $__from/1000 AND unixepoch(received_at) <= $__to/1000 GROUP BY CAST(unixepoch(received_at)/60 AS INT) ORDER BY time",
+          "queryText": "SELECT CAST(CAST(unixepoch(received_at)/60 AS INT)*60 AS REAL)*1000 as time, MAX(CASE WHEN label='S1_center_10cm' THEN temp END) as \"S1_center_10cm(No.8)\", MAX(CASE WHEN label='S2_center_25cm' THEN temp END) as \"S2_center_25cm(No.7)\", MAX(CASE WHEN label='S3_center_40cm' THEN temp END) as \"S3_center_40cm(No.10)\", MAX(CASE WHEN label='S4_edge_10cm' THEN temp END) as \"S4_edge_10cm(No.3)\", MAX(CASE WHEN label='S5_edge_25cm' THEN temp END) as \"S5_edge_25cm(No.4)\", MAX(CASE WHEN label='S6_edge_40cm' THEN temp END) as \"S6_edge_40cm(No.9)\", MAX(CASE WHEN label='S7_outdoor' THEN temp END) as \"S7_outdoor(No.6)\" FROM temperature WHERE zone='zone-c' AND unixepoch(received_at) >= $__from/1000 AND unixepoch(received_at) <= $__to/1000 GROUP BY CAST(unixepoch(received_at)/60 AS INT) ORDER BY time",
+          "rawQueryText": "SELECT CAST(CAST(unixepoch(received_at)/60 AS INT)*60 AS REAL)*1000 as time, MAX(CASE WHEN label='S1_center_10cm' THEN temp END) as \"S1_center_10cm(No.8)\", MAX(CASE WHEN label='S2_center_25cm' THEN temp END) as \"S2_center_25cm(No.7)\", MAX(CASE WHEN label='S3_center_40cm' THEN temp END) as \"S3_center_40cm(No.10)\", MAX(CASE WHEN label='S4_edge_10cm' THEN temp END) as \"S4_edge_10cm(No.3)\", MAX(CASE WHEN label='S5_edge_25cm' THEN temp END) as \"S5_edge_25cm(No.4)\", MAX(CASE WHEN label='S6_edge_40cm' THEN temp END) as \"S6_edge_40cm(No.9)\", MAX(CASE WHEN label='S7_outdoor' THEN temp END) as \"S7_outdoor(No.6)\" FROM temperature WHERE zone='zone-c' AND unixepoch(received_at) >= $__from/1000 AND unixepoch(received_at) <= $__to/1000 GROUP BY CAST(unixepoch(received_at)/60 AS INT) ORDER BY time",
           "queryType": "table",
           "refId": "A"
         }
@@ -134,7 +134,7 @@
         },
         "overrides": [
           {
-            "matcher": { "id": "byName", "options": "S7_outdoor" },
+            "matcher": { "id": "byName", "options": "S7_outdoor(No.6)" },
             "properties": [
               { "id": "custom.lineStyle", "value": { "fill": "dash", "dash": [10, 10] } },
               { "id": "color", "value": { "mode": "fixed", "fixedColor": "semi-dark-orange" } }
