@@ -1,0 +1,260 @@
+{
+  "uid": "solar-heat-main",
+  "title": "Solar Heat - Temperature Monitor",
+  "timezone": "Asia/Tokyo",
+  "refresh": "5m",
+  "time": {
+    "from": "now-7d",
+    "to": "now"
+  },
+  "panels": [
+    {
+      "id": 1,
+      "title": "All Zones - Center 10cm",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 0 },
+      "datasource": { "type": "frser-sqlite-datasource", "uid": "P648C6F40D76405CF" },
+      "targets": [
+        {
+          "queryText": "SELECT CAST(CAST(unixepoch(received_at)/60 AS INT)*60 AS REAL)*1000 as time, MAX(CASE WHEN zone='zone-a' THEN temp END) as \"zone-a\", MAX(CASE WHEN zone='zone-b' THEN temp END) as \"zone-b\", MAX(CASE WHEN zone='zone-c' THEN temp END) as \"zone-c\" FROM temperature WHERE label='S1_center_10cm' AND unixepoch(received_at) >= $__from/1000 AND unixepoch(received_at) <= $__to/1000 GROUP BY CAST(unixepoch(received_at)/60 AS INT) ORDER BY time",
+          "rawQueryText": "SELECT CAST(CAST(unixepoch(received_at)/60 AS INT)*60 AS REAL)*1000 as time, MAX(CASE WHEN zone='zone-a' THEN temp END) as \"zone-a\", MAX(CASE WHEN zone='zone-b' THEN temp END) as \"zone-b\", MAX(CASE WHEN zone='zone-c' THEN temp END) as \"zone-c\" FROM temperature WHERE label='S1_center_10cm' AND unixepoch(received_at) >= $__from/1000 AND unixepoch(received_at) <= $__to/1000 GROUP BY CAST(unixepoch(received_at)/60 AS INT) ORDER BY time",
+          "queryType": "table",
+          "refId": "A"
+        }
+      ],
+      "transformations": [
+        { "id": "convertFieldType", "options": { "conversions": [{ "targetField": "time", "destinationType": "time" }] } }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "celsius",
+          "custom": { "lineWidth": 2, "fillOpacity": 10, "spanNulls": true }
+        }
+      },
+      "options": {
+        "tooltip": { "mode": "multi", "sort": "desc" },
+        "legend": { "displayMode": "table", "placement": "right", "calcs": ["min", "max", "mean", "lastNotNull"] }
+      }
+    },
+    {
+      "id": 10,
+      "title": "Zone A (Control)",
+      "type": "timeseries",
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 8 },
+      "datasource": { "type": "frser-sqlite-datasource", "uid": "P648C6F40D76405CF" },
+      "targets": [
+        {
+          "queryText": "SELECT CAST(CAST(unixepoch(received_at)/60 AS INT)*60 AS REAL)*1000 as time, MAX(CASE WHEN label='S1_center_10cm' THEN temp END) as \"S1_center_10cm\", MAX(CASE WHEN label='S2_center_25cm' THEN temp END) as \"S2_center_25cm\", MAX(CASE WHEN label='S3_center_40cm' THEN temp END) as \"S3_center_40cm\", MAX(CASE WHEN label='S4_edge_10cm' THEN temp END) as \"S4_edge_10cm\", MAX(CASE WHEN label='S5_edge_25cm' THEN temp END) as \"S5_edge_25cm\", MAX(CASE WHEN label='S6_edge_40cm' THEN temp END) as \"S6_edge_40cm\", MAX(CASE WHEN label='S7_outdoor' THEN temp END) as \"S7_outdoor\" FROM temperature WHERE zone='zone-a' AND unixepoch(received_at) >= $__from/1000 AND unixepoch(received_at) <= $__to/1000 GROUP BY CAST(unixepoch(received_at)/60 AS INT) ORDER BY time",
+          "rawQueryText": "SELECT CAST(CAST(unixepoch(received_at)/60 AS INT)*60 AS REAL)*1000 as time, MAX(CASE WHEN label='S1_center_10cm' THEN temp END) as \"S1_center_10cm\", MAX(CASE WHEN label='S2_center_25cm' THEN temp END) as \"S2_center_25cm\", MAX(CASE WHEN label='S3_center_40cm' THEN temp END) as \"S3_center_40cm\", MAX(CASE WHEN label='S4_edge_10cm' THEN temp END) as \"S4_edge_10cm\", MAX(CASE WHEN label='S5_edge_25cm' THEN temp END) as \"S5_edge_25cm\", MAX(CASE WHEN label='S6_edge_40cm' THEN temp END) as \"S6_edge_40cm\", MAX(CASE WHEN label='S7_outdoor' THEN temp END) as \"S7_outdoor\" FROM temperature WHERE zone='zone-a' AND unixepoch(received_at) >= $__from/1000 AND unixepoch(received_at) <= $__to/1000 GROUP BY CAST(unixepoch(received_at)/60 AS INT) ORDER BY time",
+          "queryType": "table",
+          "refId": "A"
+        }
+      ],
+      "transformations": [
+        { "id": "convertFieldType", "options": { "conversions": [{ "targetField": "time", "destinationType": "time" }] } }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "celsius",
+          "custom": { "lineWidth": 2, "fillOpacity": 5, "spanNulls": true }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "S7_outdoor" },
+            "properties": [
+              { "id": "custom.lineStyle", "value": { "fill": "dash", "dash": [10, 10] } },
+              { "id": "color", "value": { "mode": "fixed", "fixedColor": "semi-dark-orange" } }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "tooltip": { "mode": "multi", "sort": "desc" },
+        "legend": { "displayMode": "table", "placement": "right", "calcs": ["min", "max", "mean", "lastNotNull"] }
+      }
+    },
+    {
+      "id": 20,
+      "title": "Zone B (Standard)",
+      "type": "timeseries",
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 18 },
+      "datasource": { "type": "frser-sqlite-datasource", "uid": "P648C6F40D76405CF" },
+      "targets": [
+        {
+          "queryText": "SELECT CAST(CAST(unixepoch(received_at)/60 AS INT)*60 AS REAL)*1000 as time, MAX(CASE WHEN label='S1_center_10cm' THEN temp END) as \"S1_center_10cm\", MAX(CASE WHEN label='S2_center_25cm' THEN temp END) as \"S2_center_25cm\", MAX(CASE WHEN label='S3_center_40cm' THEN temp END) as \"S3_center_40cm\", MAX(CASE WHEN label='S4_edge_10cm' THEN temp END) as \"S4_edge_10cm\", MAX(CASE WHEN label='S5_edge_25cm' THEN temp END) as \"S5_edge_25cm\", MAX(CASE WHEN label='S6_edge_40cm' THEN temp END) as \"S6_edge_40cm\", MAX(CASE WHEN label='S7_outdoor' THEN temp END) as \"S7_outdoor\" FROM temperature WHERE zone='zone-b' AND unixepoch(received_at) >= $__from/1000 AND unixepoch(received_at) <= $__to/1000 GROUP BY CAST(unixepoch(received_at)/60 AS INT) ORDER BY time",
+          "rawQueryText": "SELECT CAST(CAST(unixepoch(received_at)/60 AS INT)*60 AS REAL)*1000 as time, MAX(CASE WHEN label='S1_center_10cm' THEN temp END) as \"S1_center_10cm\", MAX(CASE WHEN label='S2_center_25cm' THEN temp END) as \"S2_center_25cm\", MAX(CASE WHEN label='S3_center_40cm' THEN temp END) as \"S3_center_40cm\", MAX(CASE WHEN label='S4_edge_10cm' THEN temp END) as \"S4_edge_10cm\", MAX(CASE WHEN label='S5_edge_25cm' THEN temp END) as \"S5_edge_25cm\", MAX(CASE WHEN label='S6_edge_40cm' THEN temp END) as \"S6_edge_40cm\", MAX(CASE WHEN label='S7_outdoor' THEN temp END) as \"S7_outdoor\" FROM temperature WHERE zone='zone-b' AND unixepoch(received_at) >= $__from/1000 AND unixepoch(received_at) <= $__to/1000 GROUP BY CAST(unixepoch(received_at)/60 AS INT) ORDER BY time",
+          "queryType": "table",
+          "refId": "A"
+        }
+      ],
+      "transformations": [
+        { "id": "convertFieldType", "options": { "conversions": [{ "targetField": "time", "destinationType": "time" }] } }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "celsius",
+          "custom": { "lineWidth": 2, "fillOpacity": 5, "spanNulls": true }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "S7_outdoor" },
+            "properties": [
+              { "id": "custom.lineStyle", "value": { "fill": "dash", "dash": [10, 10] } },
+              { "id": "color", "value": { "mode": "fixed", "fixedColor": "semi-dark-orange" } }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "tooltip": { "mode": "multi", "sort": "desc" },
+        "legend": { "displayMode": "table", "placement": "right", "calcs": ["min", "max", "mean", "lastNotNull"] }
+      }
+    },
+    {
+      "id": 30,
+      "title": "Zone C (Microbe)",
+      "type": "timeseries",
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 28 },
+      "datasource": { "type": "frser-sqlite-datasource", "uid": "P648C6F40D76405CF" },
+      "targets": [
+        {
+          "queryText": "SELECT CAST(CAST(unixepoch(received_at)/60 AS INT)*60 AS REAL)*1000 as time, MAX(CASE WHEN label='S1_center_10cm' THEN temp END) as \"S1_center_10cm\", MAX(CASE WHEN label='S2_center_25cm' THEN temp END) as \"S2_center_25cm\", MAX(CASE WHEN label='S3_center_40cm' THEN temp END) as \"S3_center_40cm\", MAX(CASE WHEN label='S4_edge_10cm' THEN temp END) as \"S4_edge_10cm\", MAX(CASE WHEN label='S5_edge_25cm' THEN temp END) as \"S5_edge_25cm\", MAX(CASE WHEN label='S6_edge_40cm' THEN temp END) as \"S6_edge_40cm\", MAX(CASE WHEN label='S7_outdoor' THEN temp END) as \"S7_outdoor\" FROM temperature WHERE zone='zone-c' AND unixepoch(received_at) >= $__from/1000 AND unixepoch(received_at) <= $__to/1000 GROUP BY CAST(unixepoch(received_at)/60 AS INT) ORDER BY time",
+          "rawQueryText": "SELECT CAST(CAST(unixepoch(received_at)/60 AS INT)*60 AS REAL)*1000 as time, MAX(CASE WHEN label='S1_center_10cm' THEN temp END) as \"S1_center_10cm\", MAX(CASE WHEN label='S2_center_25cm' THEN temp END) as \"S2_center_25cm\", MAX(CASE WHEN label='S3_center_40cm' THEN temp END) as \"S3_center_40cm\", MAX(CASE WHEN label='S4_edge_10cm' THEN temp END) as \"S4_edge_10cm\", MAX(CASE WHEN label='S5_edge_25cm' THEN temp END) as \"S5_edge_25cm\", MAX(CASE WHEN label='S6_edge_40cm' THEN temp END) as \"S6_edge_40cm\", MAX(CASE WHEN label='S7_outdoor' THEN temp END) as \"S7_outdoor\" FROM temperature WHERE zone='zone-c' AND unixepoch(received_at) >= $__from/1000 AND unixepoch(received_at) <= $__to/1000 GROUP BY CAST(unixepoch(received_at)/60 AS INT) ORDER BY time",
+          "queryType": "table",
+          "refId": "A"
+        }
+      ],
+      "transformations": [
+        { "id": "convertFieldType", "options": { "conversions": [{ "targetField": "time", "destinationType": "time" }] } }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "celsius",
+          "custom": { "lineWidth": 2, "fillOpacity": 5, "spanNulls": true }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "S7_outdoor" },
+            "properties": [
+              { "id": "custom.lineStyle", "value": { "fill": "dash", "dash": [10, 10] } },
+              { "id": "color", "value": { "mode": "fixed", "fixedColor": "semi-dark-orange" } }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "tooltip": { "mode": "multi", "sort": "desc" },
+        "legend": { "displayMode": "table", "placement": "right", "calcs": ["min", "max", "mean", "lastNotNull"] }
+      }
+    },
+    {
+      "id": 40,
+      "title": "Depth - Center (All Zones)",
+      "type": "timeseries",
+      "gridPos": { "h": 10, "w": 12, "x": 0, "y": 38 },
+      "datasource": { "type": "frser-sqlite-datasource", "uid": "P648C6F40D76405CF" },
+      "targets": [
+        {
+          "queryText": "SELECT CAST(CAST(unixepoch(received_at)/60 AS INT)*60 AS REAL)*1000 as time, MAX(CASE WHEN zone='zone-a' AND label='S1_center_10cm' THEN temp END) as \"A_10cm\", MAX(CASE WHEN zone='zone-a' AND label='S2_center_25cm' THEN temp END) as \"A_25cm\", MAX(CASE WHEN zone='zone-a' AND label='S3_center_40cm' THEN temp END) as \"A_40cm\", MAX(CASE WHEN zone='zone-b' AND label='S1_center_10cm' THEN temp END) as \"B_10cm\", MAX(CASE WHEN zone='zone-b' AND label='S2_center_25cm' THEN temp END) as \"B_25cm\", MAX(CASE WHEN zone='zone-b' AND label='S3_center_40cm' THEN temp END) as \"B_40cm\", MAX(CASE WHEN zone='zone-c' AND label='S1_center_10cm' THEN temp END) as \"C_10cm\", MAX(CASE WHEN zone='zone-c' AND label='S2_center_25cm' THEN temp END) as \"C_25cm\", MAX(CASE WHEN zone='zone-c' AND label='S3_center_40cm' THEN temp END) as \"C_40cm\" FROM temperature WHERE label IN ('S1_center_10cm','S2_center_25cm','S3_center_40cm') AND unixepoch(received_at) >= $__from/1000 AND unixepoch(received_at) <= $__to/1000 GROUP BY CAST(unixepoch(received_at)/60 AS INT) ORDER BY time",
+          "rawQueryText": "SELECT CAST(CAST(unixepoch(received_at)/60 AS INT)*60 AS REAL)*1000 as time, MAX(CASE WHEN zone='zone-a' AND label='S1_center_10cm' THEN temp END) as \"A_10cm\", MAX(CASE WHEN zone='zone-a' AND label='S2_center_25cm' THEN temp END) as \"A_25cm\", MAX(CASE WHEN zone='zone-a' AND label='S3_center_40cm' THEN temp END) as \"A_40cm\", MAX(CASE WHEN zone='zone-b' AND label='S1_center_10cm' THEN temp END) as \"B_10cm\", MAX(CASE WHEN zone='zone-b' AND label='S2_center_25cm' THEN temp END) as \"B_25cm\", MAX(CASE WHEN zone='zone-b' AND label='S3_center_40cm' THEN temp END) as \"B_40cm\", MAX(CASE WHEN zone='zone-c' AND label='S1_center_10cm' THEN temp END) as \"C_10cm\", MAX(CASE WHEN zone='zone-c' AND label='S2_center_25cm' THEN temp END) as \"C_25cm\", MAX(CASE WHEN zone='zone-c' AND label='S3_center_40cm' THEN temp END) as \"C_40cm\" FROM temperature WHERE label IN ('S1_center_10cm','S2_center_25cm','S3_center_40cm') AND unixepoch(received_at) >= $__from/1000 AND unixepoch(received_at) <= $__to/1000 GROUP BY CAST(unixepoch(received_at)/60 AS INT) ORDER BY time",
+          "queryType": "table",
+          "refId": "A"
+        }
+      ],
+      "transformations": [
+        { "id": "convertFieldType", "options": { "conversions": [{ "targetField": "time", "destinationType": "time" }] } }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "celsius",
+          "custom": { "lineWidth": 2, "fillOpacity": 5, "spanNulls": true }
+        }
+      },
+      "options": {
+        "tooltip": { "mode": "multi", "sort": "desc" },
+        "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["lastNotNull"] }
+      }
+    },
+    {
+      "id": 41,
+      "title": "Depth - Edge (All Zones)",
+      "type": "timeseries",
+      "gridPos": { "h": 10, "w": 12, "x": 12, "y": 38 },
+      "datasource": { "type": "frser-sqlite-datasource", "uid": "P648C6F40D76405CF" },
+      "targets": [
+        {
+          "queryText": "SELECT CAST(CAST(unixepoch(received_at)/60 AS INT)*60 AS REAL)*1000 as time, MAX(CASE WHEN zone='zone-a' AND label='S4_edge_10cm' THEN temp END) as \"A_10cm\", MAX(CASE WHEN zone='zone-a' AND label='S5_edge_25cm' THEN temp END) as \"A_25cm\", MAX(CASE WHEN zone='zone-a' AND label='S6_edge_40cm' THEN temp END) as \"A_40cm\", MAX(CASE WHEN zone='zone-b' AND label='S4_edge_10cm' THEN temp END) as \"B_10cm\", MAX(CASE WHEN zone='zone-b' AND label='S5_edge_25cm' THEN temp END) as \"B_25cm\", MAX(CASE WHEN zone='zone-b' AND label='S6_edge_40cm' THEN temp END) as \"B_40cm\", MAX(CASE WHEN zone='zone-c' AND label='S4_edge_10cm' THEN temp END) as \"C_10cm\", MAX(CASE WHEN zone='zone-c' AND label='S5_edge_25cm' THEN temp END) as \"C_25cm\", MAX(CASE WHEN zone='zone-c' AND label='S6_edge_40cm' THEN temp END) as \"C_40cm\" FROM temperature WHERE label IN ('S4_edge_10cm','S5_edge_25cm','S6_edge_40cm') AND unixepoch(received_at) >= $__from/1000 AND unixepoch(received_at) <= $__to/1000 GROUP BY CAST(unixepoch(received_at)/60 AS INT) ORDER BY time",
+          "rawQueryText": "SELECT CAST(CAST(unixepoch(received_at)/60 AS INT)*60 AS REAL)*1000 as time, MAX(CASE WHEN zone='zone-a' AND label='S4_edge_10cm' THEN temp END) as \"A_10cm\", MAX(CASE WHEN zone='zone-a' AND label='S5_edge_25cm' THEN temp END) as \"A_25cm\", MAX(CASE WHEN zone='zone-a' AND label='S6_edge_40cm' THEN temp END) as \"A_40cm\", MAX(CASE WHEN zone='zone-b' AND label='S4_edge_10cm' THEN temp END) as \"B_10cm\", MAX(CASE WHEN zone='zone-b' AND label='S5_edge_25cm' THEN temp END) as \"B_25cm\", MAX(CASE WHEN zone='zone-b' AND label='S6_edge_40cm' THEN temp END) as \"B_40cm\", MAX(CASE WHEN zone='zone-c' AND label='S4_edge_10cm' THEN temp END) as \"C_10cm\", MAX(CASE WHEN zone='zone-c' AND label='S5_edge_25cm' THEN temp END) as \"C_25cm\", MAX(CASE WHEN zone='zone-c' AND label='S6_edge_40cm' THEN temp END) as \"C_40cm\" FROM temperature WHERE label IN ('S4_edge_10cm','S5_edge_25cm','S6_edge_40cm') AND unixepoch(received_at) >= $__from/1000 AND unixepoch(received_at) <= $__to/1000 GROUP BY CAST(unixepoch(received_at)/60 AS INT) ORDER BY time",
+          "queryType": "table",
+          "refId": "A"
+        }
+      ],
+      "transformations": [
+        { "id": "convertFieldType", "options": { "conversions": [{ "targetField": "time", "destinationType": "time" }] } }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "celsius",
+          "custom": { "lineWidth": 2, "fillOpacity": 5, "spanNulls": true }
+        }
+      },
+      "options": {
+        "tooltip": { "mode": "multi", "sort": "desc" },
+        "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["lastNotNull"] }
+      }
+    },
+    {
+      "id": 50,
+      "title": "Device Status",
+      "type": "table",
+      "gridPos": { "h": 6, "w": 24, "x": 0, "y": 48 },
+      "datasource": { "type": "frser-sqlite-datasource", "uid": "P648C6F40D76405CF" },
+      "targets": [
+        {
+          "queryText": "SELECT zone, bus_v, sd_status, wifi_attempts, uptime_min, received_at FROM device_status WHERE received_at = (SELECT MAX(received_at) FROM device_status ds2 WHERE ds2.zone = device_status.zone) ORDER BY zone",
+          "rawQueryText": "SELECT zone, bus_v, sd_status, wifi_attempts, uptime_min, received_at FROM device_status WHERE received_at = (SELECT MAX(received_at) FROM device_status ds2 WHERE ds2.zone = device_status.zone) ORDER BY zone",
+          "queryType": "table",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "bus_v" },
+            "properties": [
+              { "id": "unit", "value": "volt" },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    { "color": "red", "value": null },
+                    { "color": "red", "value": 0 },
+                    { "color": "yellow", "value": 4.0 },
+                    { "color": "green", "value": 4.5 }
+                  ]
+                }
+              },
+              { "id": "custom.cellOptions", "value": { "type": "color-background" } }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "sd_status" },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  { "type": "value", "options": { "ok": { "color": "green", "text": "OK" }, "no_card": { "color": "red", "text": "No Card" }, "mount_failed": { "color": "red", "text": "Mount Failed" }, "write_failed": { "color": "red", "text": "Write Failed" } } }
+                ]
+              },
+              { "id": "custom.cellOptions", "value": { "type": "color-background" } }
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "schemaVersion": 39,
+  "version": 1
+}

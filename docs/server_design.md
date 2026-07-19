@@ -1,22 +1,13 @@
 # サーバー設計書
 
-最終更新: 2026-07-10
+最終更新: 2026-07-19
 
 ## 目的
 
-PicoBox（区A/B/C 各台）から送られてくる温度データを **自宅内のRaspberry Pi 4** で受信・蓄積・可視化する。
-クラウド（Ambient等）に依存せず、データ所有権を手元に保つ。
+PicoBox（区A/B/C 各台）から送られてくる温度データを収集・蓄積・可視化する。
+農場に設置したモバイルルーター経由でクラウド（GCE）にMQTT送信し、自宅のRaspberry Piで可視化する。
 
 **設計方針**: 手間を最小化する。Dockerやコンテナ抽象化は使わず、apt install と Python で完結させる。
-
-## 構築結果（2026-05-05）
-
-End-to-End データ流通確認済み：
-
-```
-Pico W ──MQTT──> Mosquitto ──> mqtt_logger.py ──> SQLite ──> Grafana ──> ブラウザ
-                                                                              ✅
-```
 
 ## 全体構成
 
@@ -29,82 +20,138 @@ Pico W ──MQTT──> Mosquitto ──> mqtt_logger.py ──> SQLite ──>
        └────────────────┴────────────────┘
                         │
                         ▼
+        ┌──────────────────────────────┐
+        │ カシムラ KD-249 モバイルルーター │  ← 農場設置
+        │ (SORACOM plan-K2 SIM)        │
+        └──────────────┬──���────────────┘
+                       │ LTE
+                       ▼
+┌──────────────────────────────────────────────────┐
+│  GCE (mqtt-broker / 34.58.138.105)               │
+│  e2-micro (1GB RAM), us-central1-a               │
+│                                                   │
+│  ┌──────────────┐    ┌──────────────────┐        │
+│  │ Mosquitto    │───>│ mqtt_logger.py   │        │
+│  │ :1883       │    │ (バックアップ用)  │        │
+│  │ (��証あり)   ��    └────────┬─────────┘        │
+│  └──────────────┘             │                   │
+│                               ▼                   │
+│                    /var/lib/solar-heat/data.db     │
+│                    (SQLite バックアップ)           │
+└──────────────────────────────────────────────────┘
+                       │
+              MQTT subscribe (LAN→WAN)
+                       │
 ┌──────────────────────────────────────────────────┐
 │  Raspberry Pi 4（hp-server / 192.168.0.10）      │
 │  Debian 13 (trixie) aarch64                      │
-│  SD: 28GB (24% 使用) / RAM: 3.7GB               │
+│  SD: 28GB / RAM: 3.7GB                           │
 │                                                   │
-│  ┌──────────┐    ┌──────────────────┐            │
-│  │Mosquitto │───>│ mqtt_logger.py   │            │
-│  │ :1883    │    │ (systemdサービス)│            │
-│  └──────────┘    └────────┬─────────┘            │
-│                           │                       │
-│                           ▼                       │
-│                  ┌────────────────────────┐      │
-│                  │ /var/lib/solar-heat/   │      │
-│                  │   data.db (SQLite)     │      │
-│                  └──────────┬─────────────┘      │
-│                             │                     │
-│                             ▼                     │
-│                  ┌────────────────────────┐      │
-│                  │ Grafana :3000          │      │
-│                  │ + frser-sqlite-datasource     │
-│                  └────────────────────────┘      │
-│                                                   │
-│                  ┌────────────────────────┐      │
-│                  │ Hugo :1313             │      │
-│                  │ ポートフォリオHP        │      │
-│                  └────────────────────────┘      │
+│  ┌───────────���──────┐                            │
+│  │ mqtt_logger.py   │  �� GCE Mosquittoを購読    │
+│  │ (systemdサービス)│                            │
+│  └────────┬─────────┘                            │
+│           │                                       │
+│           ▼                                       │
+│  ┌────────────────────────┐                      │
+│  │ /var/lib/solar-heat/   │                      │
+│  │   data.db (SQLite)     │  ← 本番データ       │
+│  └─────────��┬─────────────┘                      │
+│             │                                     │
+│             ▼                                     │
+│  ┌────────────────────────┐                      │
+│  │ Grafana :3000          │                      │
+│  │ + frser-sqlite-datasource v4.0.2             │
+│  └────────────────────────┘                      │
 └──────────────────────────────────────────────────┘
-                        │
-                ┌───────┴────────┐
-                ▼                ▼
-  http://192.168.0.10:3000   http://192.168.0.10:1313
-      (Grafana)                (ポートフォリオ)
 ```
 
-## コンポーネント実装内容
+## コンポーネント一覧
 
-| 役割 | 採用 | バージョン | インストール／配置 |
+### GCE (mqtt-broker)
+
+| 役割 | 採用 | バージョン | 備考 |
 |---|---|---|---|
-| MQTTブローカー | Mosquitto | 2.0.21 | `apt install mosquitto mosquitto-clients` |
-| MQTT購読・保存 | Python + paho-mqtt | Python 3.13.5 / paho-mqtt 2.1.0 | `apt install python3-paho-mqtt` + `server/mqtt_logger.py` |
-| データ保存 | SQLite | 3.46.1 | Python標準ライブラリ + `apt install sqlite3` |
-| 可視化 | Grafana + frser-sqlite-datasource | 13.0.1 | Grafana公式aptリポジトリ + `grafana cli plugins install` |
-| ポートフォリオHP | Hugo + Blowfish テーマ | Hugo 0.131.0 / Blowfish v2.88.1 | `apt install hugo` + `git clone` |
-| サービス管理 | systemd | OS標準 | — |
+| MQTTブローカー | Mosquitto | 2.0.x | パスワード認証���picobox / solar-heat-2026） |
+| MQTT購読・保存 | mqtt_logger.py | Python 3.x | バックアップ用 |
+| データ保存 | SQLite | 3.x | /var/lib/solar-heat/data.db |
+
+### Raspberry Pi (hp-server)
+
+| 役割 | 採用 | バージョン | 備考 |
+|---|---|---|---|
+| MQTT購読・保存 | Python + paho-mqtt | Python 3.13.5 / paho-mqtt 2.1.0 | GCE Mosquittoを購読 |
+| データ保存 | SQLite | 3.46.1 | /var/lib/solar-heat/data.db（本番） |
+| 可視化 | Grafana + frser-sqlite-datasource | 13.0.1 / v4.0.2 | LAN内アクセスのみ |
 
 ## ネットワーク・ポート
 
-| サービス | ポート | 公開範囲 | 備考 |
+| サービス | ホスト | ポート | 公開範囲 |
 |---|---|---|---|
-| Mosquitto | 1883 | LAN内 | 匿名許可 |
-| Grafana | 3000 | LAN内 | admin認証、匿名閲覧許可、iFrame埋め込み許可 |
-| Hugo | 1313 | LAN内 | ポートフォリオHP（dashboard.html でGrafana iFrame 3分割表示） |
+| Mosquitto | GCE (34.58.138.105) | 1883 | インターネット（認証必須） |
+| Grafana | Pi (192.168.0.10) | 3000 | LAN内 |
 
-## データフロー詳細
+### GCE ファイアウォールルール
+
+| ルール名 | ポート | 用途 |
+|---|---|---|
+| allow-mqtt | tcp:1883 | PicoBox → Mosquitto |
+| default-allow-ssh | tcp:22 | 管理用 |
+
+## データフロ���
 
 ### Picoが送るMQTTメッセージ
 
-`pico/main.py` の `send_mqtt()` から30分ごとに発行：
+30分間隔（INTERVAL_SEC = 1800）で発行：
 
 | トピック | ペイロード（JSON） |
 |---|---|
-| `solar-heat/{zone}/{label}` | `{"time": "2026-...", "temp": 25.5}` |
+| `solar-heat/{zone}/{label}` | `{"time": "2021-01-01T...", "temp": 25.5}` |
+| `solar-heat/{zone}/status` | `{"zone": "...", "bus_v": 5.06, "sd_status": "mount_failed", ...}` |
 | `solar-heat/{zone}/power_alert` | `{"zone": "...", "bus_v": 4.0, "alert": "main_power_lost"}` |
+
+> **注意**: `time` フィールドはPicoのRTC（NTP同期失敗で2021-01-01固定）。
+> 正確な時刻は `received_at`（サーバー側付与UTC）を使用する。
+
+### mqtt_logger のゾーン・ラベル変換
+
+配線取り回しの都合でPicoBox筐体を入れ替えて設置したため、`mqtt_logger.py` で受信時にゾーン名を変換してDBに保存する。
+
+```python
+ZONE_REMAP = {"zone-a": "zone-c", "zone-c": "zone-a"}
+```
+
+| Picoが送信する zone | DBに保存される zone | 物理エリア |
+|---|---|---|
+| zone-a（Pico1） | **zone-c** | エリアC（微生物養生） |
+| zone-b（Pico2） | zone-b | エリアB（標準養生） |
+| zone-c（Pico3） | **zone-a** | エリアA（対照区） |
+
+センサープローブも一部コネクタを差し替えている（詳細は `docs/sensor_registry.md` 参照）。
+ラベル（S1〜S7）は常にGPIOピン＝物理配置深度を表すため、DB上のラベルは正確。
 
 ### SQLiteスキーマ
 
 ```sql
 CREATE TABLE temperature (
     id          INTEGER PRIMARY KEY AUTOINCREMENT,
-    timestamp   TEXT NOT NULL,    -- Picoが送るISO8601
-    received_at TEXT NOT NULL,    -- Pi側の受信時刻
+    timestamp   TEXT NOT NULL,    -- Picoが送るISO8601（2021-01-01固定、参考値）
+    received_at TEXT NOT NULL,    -- サーバー側の受信時刻（UTC、正確）
     zone        TEXT NOT NULL,
     label       TEXT NOT NULL,
     temp        REAL NOT NULL
 );
 CREATE INDEX idx_temp_zone_ts ON temperature(zone, timestamp);
+
+CREATE TABLE device_status (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    received_at TEXT NOT NULL,
+    zone        TEXT NOT NULL,
+    bus_v       REAL,
+    sd_status   TEXT,
+    wifi_attempts INTEGER,
+    uptime_min  INTEGER
+);
 
 CREATE TABLE power_alert (
     id          INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -115,172 +162,111 @@ CREATE TABLE power_alert (
 );
 ```
 
-## ディレクトリ構成（リポジトリ側）
+## Grafana ダッシュボード
 
-```
-server/
-├── README.md                    # Pi側でのセットアップ手順
-├── mqtt_logger.py               # MQTT購読 → SQLite保存
-├── mqtt_logger.service          # systemdユニット定義
-├── mosquitto/
-│   └── mosquitto.conf           # MQTTブローカー設定
-└── grafana/
-    └── provisioning/
-        ├── datasources/
-        │   └── sqlite.yml       # Grafanaデータソース自動登録
-        └── dashboards/
-            ├── dashboards.yml   # ダッシュボードprovisioning設定
-            └── solar-heat.json  # ダッシュボード定義（参考用）
-```
+UID: `solar-heat-main`
+URL: `http://192.168.0.10:3000/d/solar-heat-main/solar-heat-temperature-monitor`
 
-## Pi側の配置
-
-| リポジトリ側 | Pi側配置 | 配置方法 |
+| Panel ID | タイトル | 内容 |
 |---|---|---|
-| `server/mosquitto/mosquitto.conf` | `/etc/mosquitto/conf.d/solar-heat.conf` | シンボリックリンク |
-| `server/mqtt_logger.service` | `/etc/systemd/system/mqtt_logger.service` | シンボリックリンク |
-| `server/mqtt_logger.py` | `~/solar-heat/server/mqtt_logger.py` | git pullで自動反映 |
-| `server/grafana/provisioning/datasources/sqlite.yml` | `/etc/grafana/provisioning/datasources/sqlite.yml` | **コピー（権限の都合）** |
+| 1 | All Zones - Center 10cm | 全ゾーンのS1比較（3線） |
+| 10 | Zone A (Control) | zone-a 全7センサー（7線） |
+| 20 | Zone B (Standard) | zone-b 全7センサー（7線） |
+| 30 | Zone C (Microbe) | zone-c 全7センサー（7線） |
+| 40 | Depth - Center | 中央深度比較 A/B/C × 10/25/40cm（9線） |
+| 41 | Depth - Edge | 辺縁深度比較 A/B/C × 10/25/40cm（9線） |
+| 50 | Device Status | 最新デバイス状態テーブル |
 
-> Grafana設定ファイルだけはGrafanaがhomeディレクトリ越しに読めない権限制約のため、シンボリックリンクではなくコピーで配置している。
-> 設定変更時は `sudo cp ~/solar-heat/server/grafana/provisioning/datasources/sqlite.yml /etc/grafana/provisioning/datasources/ && sudo systemctl restart grafana-server` が必要。
+### クエリ設計上の注意
 
-## Pi側のディレクトリ構成
-
-```
-/home/nono/
-├── solar-heat/              # git clone（データ収集系）
-│   ├── server/
-│   │   ├── mqtt_logger.py   # → systemd で常駐
-│   │   └── mosquitto/
-│   ├── pico/
-│   ├── kicad/
-│   └── docs/
-└── portfolio/               # git clone（ポートフォリオHP）
-    ├── config/
-    ├── content/
-    ├── layouts/
-    ├── static/
-    │   └── dashboard.html   # Grafana iFrame 3分割表示
-    └── themes/
-        └── blowfish/        # git submodule（v2.88.1固定）
-
-/var/lib/solar-heat/
-└── data.db                  # SQLiteデータベース（温度・ステータス・アラート）
-```
-
-## 開発・デプロイフロー
-
-```
-[開発機（Windows）]                [Raspberry Pi 4]
-                                  
-git push  ─────────────────────>  git pull
-                                       │
-                                       ▼
-                                  sudo systemctl restart mqtt_logger
-                                  (Grafana設定変更時のみ追加コピー)
-                                       │
-                                       ▼
-                                  反映完了
-```
-
-## 実装上のハマりポイント（参考メモ）
-
-1. **umqtt.simple モジュール不在**
-   - MicroPython にデフォルトでは入っていない
-   - 対処: `mpremote connect COM5 mip install umqtt.simple`
-
-2. **config.py の ZONE 設定漏れ**
-   - main.py が `config.ZONE` を参照するが定義されておらず初回はエラー
-   - 対処: `ZONE = "zone-a"` を追加
-
-3. **Grafana provisioning ファイルの権限**
-   - シンボリックリンクの先がhomeディレクトリだとgrafanaユーザーが読めない
-   - 対処: `chmod 755 /home/nono` + 設定ファイルは `root:grafana 640` でコピー配置
-
-4. **SDマウント失敗時の起動停止**
-   - main.py が SD マウント失敗で起動全体を止める
-   - SD カード必須の運用なら現状OK、テスト用に分離するなら要検討
+- **frser-sqlite-datasource の `queryType: "time series"` はバグで使用不可**（v4.0.2, v4.0.6共に "can not convert to wide series" エラー）
+- `queryType: "table"` を使用し、SQLでワイドフォーマット（PIVOT）に変換
+- 時刻���ラムは `CAST(CAST(unixepoch(received_at)/60 AS INT)*60 AS REAL)*1000` （分丸めエポックms）
+- `convertFieldType` トランスフォーメーションで `time` を時間型に変換
+- `$__from / 1000` と `$__to / 1000` でGrafanaの時間範囲フィルタ��用
+- Go バックエンドは `queryText` フィールドを読む（`rawQueryText` はフロントエンド用、両方記載）
 
 ## アクセス情報
 
 | 項目 | 値 |
 |---|---|
-| Pi ホスト名 | `hp-server` |
-| Pi IPアドレス | `192.168.0.10` |
+| **GCE** | |
+| インスタンス名 | mqtt-broker |
+| IP | 34.58.138.105 |
+| SSH | `gcloud compute ssh nono@mqtt-broker --zone=us-central1-a` |
+| MQTT認証 | user: `picobox` / pass: `solar-heat-2026` |
+| **Raspberry Pi** | |
+| ホスト名 | hp-server |
+| IP | 192.168.0.10 |
 | SSH | `ssh nono@192.168.0.10` |
 | Grafana URL | http://192.168.0.10:3000 |
-| Grafana ダッシュボードUID | `9a4350e2-cfdf-4ed8-b916-bd06a9d448f6` |
+| Grafana ダッシュボードUID | `solar-heat-main` |
+| Datasource UID | `P648C6F40D76405CF` |
 | SQLite DB | `/var/lib/solar-heat/data.db` |
-| ポートフォリオHP (LAN) | http://192.168.0.10:1313 |
-| ポートフォリオHP (公開) | https://nono112002.github.io/ |
-| HP リポジトリ | `nono112002/nono112002.github.io` |
-| HP ローカルパス | `C:\Users\momon\work\portfolio\hugo` |
 
-### よく使うコマンド
+## よく使うコマンド
 
 ```bash
-# ログ確認
-journalctl -u mqtt_logger -f
-
+# === GCE ===
 # MQTT受信確認
-mosquitto_sub -h localhost -t 'solar-heat/#' -v
+gcloud compute ssh nono@mqtt-broker --zone=us-central1-a --command="mosquitto_sub -h localhost -u picobox -P solar-heat-2026 -t 'solar-heat/#' -v"
+
+# GCE mqtt_logger ログ
+gcloud compute ssh nono@mqtt-broker --zone=us-central1-a --command="journalctl -u mqtt_logger -f"
+
+# GCE バックアップDB確認
+gcloud compute ssh nono@mqtt-broker --zone=us-central1-a --command="sqlite3 /var/lib/solar-heat/data.db 'SELECT zone, count(*), max(received_at) FROM temperature GROUP BY zone'"
+
+# === Raspberry Pi ===
+# mqtt_logger ログ
+ssh nono@192.168.0.10 "journalctl -u mqtt_logger -f"
 
 # DB確認
-sqlite3 /var/lib/solar-heat/data.db 'SELECT * FROM temperature ORDER BY id DESC LIMIT 10;'
+ssh nono@192.168.0.10 "sqlite3 /var/lib/solar-heat/data.db 'SELECT zone, count(*), max(received_at) FROM temperature GROUP BY zone'"
 
 # ソフト更新
-cd ~/solar-heat && git pull && sudo systemctl restart mqtt_logger
-cd ~/portfolio && git pull --recurse-submodules
+ssh nono@192.168.0.10 "cd ~/solar-heat && git pull && sudo systemctl restart mqtt_logger"
 
-# Hugo起動（systemd未登録、手動起動）
-cd ~/portfolio && hugo server --bind 0.0.0.0 --baseURL http://192.168.0.10 -p 1313
+# Grafana ダッシュボード更新
+ssh nono@192.168.0.10 "sudo cp ~/solar-heat/server/grafana/provisioning/dashboards/solar-heat.json /etc/grafana/provisioning/dashboards/ && sudo systemctl restart grafana-server"
 ```
-
-## セキュリティ方針（現状）
-
-- **LAN内運用前提**: MQTTは匿名許可
-- **Grafana**: admin/パスワード認証
-- **SSH**: 公開鍵認証（パスワードログインも残存）
-- **将来**: 外部公開する場合はMQTT認証 + TLS化を必ず追加
 
 ## systemd サービス一覧
 
-| サービス | 状態 | 自動起動 | 備考 |
-|---|---|---|---|
-| `mosquitto.service` | active | enabled | MQTTブローカー |
-| `mqtt_logger.service` | active | enabled | MQTT→SQLite保存 |
-| `grafana-server.service` | active | enabled | 可視化 |
-| Hugo | active（手動起動） | **未登録** | `nohup hugo server ...` で起動中 |
+### GCE
 
-> Hugo は systemd 未登録のため、Pi 再起動時に手動で起動する必要がある。
-> 常駐化する場合は systemd ユニットファイルを作成すること。
-
-## Grafana ダッシュボード構成
-
-UID: `9a4350e2-cfdf-4ed8-b916-bd06a9d448f6`
-
-| Panel ID | タイトル | 内容 |
+| サービス | 状態 | 備考 |
 |---|---|---|
-| 1 | Zone-A | zone-a 全7センサー温度推移 |
-| 2 | Zone-B | zone-b 全7センサー温度推移 |
-| 3 | Zone-C | zone-c 全7センサー温度推移 |
+| `mosquitto.service` | active/enabled | MQTTブローカー（認証あり） |
+| `mqtt_logger.service` | active/enabled | バックアップ用データ収集 |
 
-ポートフォリオHP の `dashboard.html` からは上記3パネルを iFrame で埋め込み表示（上段2分割 + 下段フル幅）。
+### Raspberry Pi
 
-## データベース現況（2026-07-10時点）
+| サービス | 状態 | 備考 |
+|---|---|---|
+| `mqtt_logger.service` | active/enabled | GCE MQTTを購読 → SQLite保存 |
+| `grafana-server.service` | active/enabled | 可視化（LAN内） |
 
-| テーブル | レコード数 |
-|---|---|
-| temperature | 1,868 |
-| device_status | 224 |
-| power_alert | 1 |
+## 既知の制約・課題
 
-DBファイルサイズ: 284KB
+- **Pico RTC不正確**: NTP同期に失敗するため `timestamp` は常に 2021-01-01。`received_at` を正とする
+- **SDカードマウント失敗**: 全PicoBoxで赤LED点滅（MCP1703ハンダ不良 or SDカード接触���良の可能性）
+- **外部からのGrafana閲覧不可**: Pi は LAN内のみ。GitHub Pages (HTTPS) からの HTTP iframe は mixed content でブロックされる
+- **GCE mosquitto.conf**: リポジトリ上の `server/mosquitto/mosquitto.conf` にはWebSocket (9001) の設定があるが、GCE���番では未適用（1883のみ）
 
-## 残作業
+## データベース現況（2026-07-19時点）
 
-- ⬜ Hugo の systemd 常駐化
-- ⬜ 屋外設置・防水対策
-- ⬜ 長期運用テスト（電源断・WiFi切断時の挙動確認）
-- ⬜ SIM（SORACOM plan-K2）導入後のモバイル通信テスト
+### Pi（本番）
+
+| テーブル | zone-a (エリアA) | zone-b (エリアB) | zone-c (エリアC) |
+|---|---|---|---|
+| temperature | 153 | 197 | 1,968 |
+
+### GCE（バックアップ）
+
+| テーブル | zone-a | zone-b | zone-c |
+|---|---|---|---|
+| temperature | 133 | 168 | 119 |
+
+> zone-c のレコード数が多いのは Pico1 の自宅ベンチテスト期間のデータを含むため。
+> GCEは2026-07-12以降のデータのみ（MQTTブローカー移設日以降）。
