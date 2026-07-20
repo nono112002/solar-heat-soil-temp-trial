@@ -13,9 +13,12 @@
 
 1. **農場の PicoBox（3台）** が30分ごとに温度を計測
 2. **カシムラ モバイルルータ**（SORACOM SIM）経由で WiFi → LTE でインターネットに出る
-3. **Google Cloud（GCE）上の Mosquitto** が MQTT メッセージを中継
-4. **自宅の Raspberry Pi** が GCE から MQTT を受信し、SQLite に保存
-5. **Grafana** が SQLite を読んでブラウザにグラフ表示
+3. **Google Cloud（GCE）上の Mosquitto** が MQTT メッセージを受信
+4. **GCE の mqtt_logger** が SQLite に保存 + **Flask API** で配信
+5. **自宅の Raspberry Pi** も GCE の MQTT を購読し、ローカル SQLite に保存
+6. **Grafana**（ラズパイ）と **ポートフォリオHP**（GitHub Pages）でグラフ表示
+
+> データは GCE（API配信用）と自宅ラズパイ（Grafana用）の2箇所に保存される。
 
 ---
 
@@ -72,9 +75,20 @@
 
 | ゾーン | 区 | 処理内容 |
 |---|---|---|
-| zone-a | 区A | 対照区（処理なし） |
-| zone-b | 区B | 標準養生 |
-| zone-c | 区C | 微生物養生 |
+| zone-a | 区A | 標準区（たい肥＋菌＋ビニール） |
+| zone-b | 区B | 対照・菌なし（たい肥＋ビニール） |
+| zone-c | 区C | 対照・ビニールなし（たい肥のみ） |
+
+### PicoBox ↔ ゾーン対応
+
+| PicoBox筐体 | config.py ZONE | 設置エリア |
+|---|---|---|
+| ユニット3 | `zone-a` | 区A（標準区） |
+| ユニット2 | `zone-b` | 区B（対照・菌なし） |
+| ユニット1 | `zone-c` | 区C（対照・ビニールなし） |
+
+> 筐体番号と区が一致しないが、config.py の ZONE で正しいゾーン名を送信するため
+> DB上は常に物理エリアと一致する。
 
 ### 通信機器
 
@@ -119,7 +133,9 @@ MQTT の中継サーバーとして GCE を使用。農場（モバイル回線�
 | リージョン | us-central1-a |
 | 外部IP | 34.58.138.105 |
 | OS | Debian 12 (bookworm) |
-| サービス | Mosquitto 2.0.11（:1883、認証あり） |
+| サービス | Mosquitto 2.0.11（:1883、認証あり）、mqtt_logger、Flask API（gunicorn :5000） |
+| DB | /var/lib/solar-heat/data.db |
+| API | https://34-58-138-105.sslip.io/api/（nginx + certbot SSL） |
 
 ---
 
@@ -154,6 +170,11 @@ solar-heat/
 │   ├── parts.md                       # 部品表
 │   └── blog/                          # ブログ記事素材
 └── kicad/                             # PCB 設計データ（KiCad）
+
+GCE 上の配置（リポジトリ外、VM 内に直接配置）:
+/home/nono/solar-heat/server/mqtt_logger.py  # MQTT ロガー（サービス実行元）
+/var/lib/solar-heat/data.db                  # SQLite DB（API配信元）
+/etc/systemd/system/mqtt_logger.service
 ```
 
 ### Pico ファームウェアの動作
@@ -166,7 +187,10 @@ solar-heat/
 4. MQTT で GCE に温度データを送信（`solar-heat/{zone}/{label}`）
 5. MQTT でデバイスステータスを送信（`solar-heat/{zone}/status`）
 6. 電源電圧が 4.0V 未満なら電源アラートを送信
-7. WiFi OFF → スリープ
+7. WiFi OFF → スリープ（ウォッチドッグタイマー feed しながら）
+
+**ウォッチドッグタイマー**: 8秒タイムアウト。熱暴走等でフリーズした場合に自動リセットする。
+起動直後に有効化され、メインループ内の各ステップおよびスリープ中（1秒ごと）に feed する。
 
 ### LED 表示パターン
 
@@ -228,7 +252,8 @@ mpremote connect COMx fs cp pico/main.py :main.py
 mpremote connect COMx fs cp pico/config.py :config.py
 ```
 
-`config.py` は `.gitignore` で管理外。各台で ZONE を変えて作成：
+`config.py` は `.gitignore` で管理外。各台で ZONE と SENSOR_PINS を設定する。
+リポジトリに `config_pico1.py` / `config_pico2.py` / `config_pico3.py` を用意してある。
 
 ```python
 WIFI_SSID     = "***REDACTED_SSID***"
@@ -238,6 +263,14 @@ MQTT_PORT     = 1883
 MQTT_USER     = "picobox"
 MQTT_PASS     = "***REDACTED***"
 ZONE          = "zone-a"  # zone-a / zone-b / zone-c
+
+# プローブ入替がある場合のみ記載（main.py のデフォルトを上書き）
+SENSOR_PINS = {
+    8:  "S3_center_40cm",   # GP8 のプローブが実際に40cmにある場合
+    9:  "S2_center_25cm",
+    10: "S1_center_10cm",
+    ...
+}
 ```
 
 ### 3. Hugo（ポートフォリオ HP）
@@ -251,7 +284,7 @@ cd portfolio && git submodule update --init --recursive
 hugo server --bind 0.0.0.0 --baseURL http://192.168.0.10 -p 1313
 ```
 
-### 4. Google Cloud（MQTT 中継）
+### 4. Google Cloud（MQTT 中継 + バックアップ）
 
 ```bash
 # gcloud CLI でセットアップ済み
@@ -259,6 +292,11 @@ hugo server --bind 0.0.0.0 --baseURL http://192.168.0.10 -p 1313
 # VM: mqtt-broker (e2-micro, us-central1-a)
 # Mosquitto 認証: picobox / ***REDACTED***
 # ファイアウォール: tcp:1883 を開放
+
+# バックアップロガー
+# /opt/solar-heat/mqtt_logger.py — ローカル Mosquitto を購読し SQLite に保存
+# /var/lib/solar-heat/data.db — ラズパイと同一スキーマのバックアップDB
+# systemd: mqtt_logger.service（自動起動）
 ```
 
 ---
@@ -294,6 +332,10 @@ sudo journalctl -u mosquitto -f
 
 # 接続テスト
 mosquitto_pub -h localhost -u picobox -P ***REDACTED*** -t test/hello -m "test"
+
+# バックアップロガー確認
+sudo journalctl -u mqtt_logger -f
+sqlite3 /var/lib/solar-heat/data.db 'SELECT * FROM temperature ORDER BY id DESC LIMIT 10;'
 ```
 
 ---

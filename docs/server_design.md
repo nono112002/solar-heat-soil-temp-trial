@@ -1,6 +1,6 @@
 # サーバー設計書
 
-最終更新: 2026-07-19
+最終更新: 2026-07-20
 
 ## 目的
 
@@ -14,7 +14,7 @@ PicoBox（区A/B/C 各台）から送られてくる温度データを収集・�
 ```
 ┌─────────────┐  ┌─────────────┐  ┌─────────────┐
 │ PicoBox A   │  │ PicoBox B   │  │ PicoBox C   │
-│ (区A 対照)  │  │ (区B 標準)  │  │ (区C 微生物)│
+│ (区A 標準)  │  │ (区B 対照)  │  │ (区C ビニールなし)│
 └──────┬──────┘  └──────┬──────┘  └──────┬──────┘
        │ MQTT (WiFi)    │                │
        └────────────────┴────────────────┘
@@ -73,8 +73,10 @@ PicoBox（区A/B/C 各台）から送られてくる温度データを収集・�
 | 役割 | 採用 | バージョン | 備考 |
 |---|---|---|---|
 | MQTTブローカー | Mosquitto | 2.0.x | パスワード認証���picobox / ***REDACTED***） |
-| MQTT購読・保存 | mqtt_logger.py | Python 3.x | バックアップ用 |
+| MQTT購読・保存 | mqtt_logger.py | Python 3.x | /home/nono/solar-heat/server/ から実行 |
 | データ保存 | SQLite | 3.x | /var/lib/solar-heat/data.db |
+| データAPI | Flask + gunicorn | Python 3.x | :5000、nginx経由で HTTPS 公開 |
+| リバースプロキシ | nginx + certbot | — | 34-58-138-105.sslip.io（Let's Encrypt SSL） |
 
 ### Raspberry Pi (hp-server)
 
@@ -113,22 +115,19 @@ PicoBox（区A/B/C 各台）から送られてくる温度データを収集・�
 > **注意**: `time` フィールドはPicoのRTC（NTP同期失敗で2021-01-01固定）。
 > 正確な時刻は `received_at`（サーバー側付与UTC）を使用する。
 
-### mqtt_logger のゾーン・ラベル変換
+### ゾーン・ラベル対応
 
-配線取り回しの都合でPicoBox筐体を入れ替えて設置したため、`mqtt_logger.py` で受信時にゾーン名を変換してDBに保存する。
+各 PicoBox の `config.py` で正しい ZONE と SENSOR_PINS を設定しているため、
+Pico が送信するデータはそのまま正しいゾーン名・ラベルで DB に保存される。
+サーバー側での変換処理（ZONE_REMAP / LABEL_REMAP）は 2026-07-20 に廃止。
 
-```python
-ZONE_REMAP = {"zone-a": "zone-c", "zone-c": "zone-a"}
-```
-
-| Picoが送信する zone | DBに保存される zone | 物理エリア |
+| PicoBox筐体 | config.py ZONE | 物理エリア |
 |---|---|---|
-| zone-a（Pico1） | **zone-c** | エリアC（微生物養生） |
-| zone-b（Pico2） | zone-b | エリアB（標準養生） |
-| zone-c（Pico3） | **zone-a** | エリアA（対照区） |
+| ユニット3 | zone-a | 区A（標準区） |
+| ユニット2 | zone-b | 区B（対照・菌なし） |
+| ユニット1 | zone-c | 区C（対照・ビニールなし） |
 
-センサープローブも一部コネクタを差し替えている（詳細は `docs/sensor_registry.md` 参照）。
-ラベル（S1〜S7）は常にGPIOピン＝物理配置深度を表すため、DB上のラベルは正確。
+センサープローブの入替は `config.py` の `SENSOR_PINS` で対応（詳細は `docs/sensor_registry.md`）。
 
 ### SQLiteスキーマ
 
@@ -170,9 +169,9 @@ URL: `http://192.168.0.10:3000/d/solar-heat-main/solar-heat-temperature-monitor`
 | Panel ID | タイトル | 内容 |
 |---|---|---|
 | 1 | All Zones - Center 10cm | 全ゾーンのS1比較（3線） |
-| 10 | Zone A (Control) | zone-a 全7センサー（7線） |
-| 20 | Zone B (Standard) | zone-b 全7センサー（7線） |
-| 30 | Zone C (Microbe) | zone-c 全7センサー（7線） |
+| 10 | Zone A (Standard) | zone-a 全7センサー（7線） |
+| 20 | Zone B (Control-noMicrobe) | zone-b 全7センサー（7線） |
+| 30 | Zone C (Control-noVinyl) | zone-c 全7センサー（7線） |
 | 40 | Depth - Center | 中央深度比較 A/B/C × 10/25/40cm（9線） |
 | 41 | Depth - Edge | 辺縁深度比較 A/B/C × 10/25/40cm（9線） |
 | 50 | Device Status | 最新デバイス状態テーブル |
@@ -254,19 +253,8 @@ ssh nono@192.168.0.10 "sudo cp ~/solar-heat/server/grafana/provisioning/dashboar
 - **外部からのGrafana閲覧不可**: Pi は LAN内のみ。GitHub Pages (HTTPS) からの HTTP iframe は mixed content でブロックされる
 - **GCE mosquitto.conf**: リポジトリ上の `server/mosquitto/mosquitto.conf` にはWebSocket (9001) の設定があるが、GCE���番では未適用（1883のみ）
 
-## データベース現況（2026-07-19時点）
+## 更新履歴
 
-### Pi（本番）
-
-| テーブル | zone-a (エリアA) | zone-b (エリアB) | zone-c (エリアC) |
-|---|---|---|---|
-| temperature | 153 | 197 | 1,968 |
-
-### GCE（バックアップ）
-
-| テーブル | zone-a | zone-b | zone-c |
-|---|---|---|---|
-| temperature | 133 | 168 | 119 |
-
-> zone-c のレコード数が多いのは Pico1 の自宅ベンチテスト期間のデータを含むため。
-> GCEは2026-07-12以降のデータのみ（MQTTブローカー移設日以降）。
+- **2026-07-20**: ZONE_REMAP / LABEL_REMAP をサーバーから廃止。各Picoのconfig.pyで正しいZONE・SENSOR_PINSを設定する方式に変更。ウォッチドッグタイマー追加。Flask API + nginx SSL追加。
+- **2026-07-19**: 圃場設置、ZONE_REMAP / LABEL_REMAP 導入。
+- **2026-07-12**: GCE MQTTブローカー移設。
