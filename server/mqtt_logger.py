@@ -25,27 +25,6 @@ MQTT_PASS = os.environ.get("MQTT_PASS", "")
 MQTT_TOPIC = "solar-heat/+/+"
 DB_PATH = Path(os.environ.get("DB_PATH", "/var/lib/solar-heat/data.db"))
 
-# PicoBox筐体とエリアの入れ替え対応（配線取り回しの都合）
-# Pico1(zone-a送信) → エリアC設置、Pico3(zone-c送信) → エリアA設置
-ZONE_REMAP = {"zone-a": "zone-c", "zone-c": "zone-a"}
-
-# プローブ物理位置変更の対応（コネクタはそのまま、土中位置だけ変更）
-# キーはPicoが送信するzone名（ZONE_REMAP適用前）
-# Pico3(zone-c): No.21(GP8)→40cm, No.2(GP10)→10cm / No.18(GP12)→40cm, No.20(GP13)→25cm
-# Pico2(zone-b): No.14(GP8)→40cm, No.12(GP10)→10cm
-LABEL_REMAP = {
-    "zone-c": {
-        "S1_center_10cm": "S3_center_40cm",
-        "S3_center_40cm": "S1_center_10cm",
-        "S5_edge_25cm": "S6_edge_40cm",
-        "S6_edge_40cm": "S5_edge_25cm",
-    },
-    "zone-b": {
-        "S1_center_10cm": "S3_center_40cm",
-        "S3_center_40cm": "S1_center_10cm",
-    },
-}
-
 # --- ログ ---
 logging.basicConfig(
     level=logging.INFO,
@@ -119,9 +98,6 @@ def on_message(client, userdata, msg):
         log.warning("Unexpected topic: %s", topic)
         return
     _, zone, leaf = parts
-    label_map = LABEL_REMAP.get(zone, {})
-    leaf = label_map.get(leaf, leaf)
-    zone = ZONE_REMAP.get(zone, zone)
     received_at = now_iso()
 
     try:
@@ -171,7 +147,6 @@ def main() -> int:
     init_db(conn)
 
     client = mqtt.Client(
-        callback_api_version=mqtt.CallbackAPIVersion.VERSION2,
         userdata={"conn": conn},
     )
     client.on_connect = on_connect

@@ -40,8 +40,8 @@ PIN_POWER_MON = 26   # 主電源監視 ADC（10kΩ/10kΩ分圧）
 # 5V入力時: GP26 = 2.5V。閾値4.0V入力 → GP26 = 2.0V
 POWER_THRESHOLD_V = 4.0
 
-# DS18B20 個別GPIO
-SENSOR_PINS = {
+# DS18B20 個別GPIO（config.py で上書き可能）
+SENSOR_PINS = getattr(config, "SENSOR_PINS", {
     8:  "S1_center_10cm",
     9:  "S2_center_25cm",
     10: "S3_center_40cm",
@@ -49,9 +49,10 @@ SENSOR_PINS = {
     12: "S5_edge_25cm",
     13: "S6_edge_40cm",
     14: "S7_outdoor",
-}
+})
 
 INTERVAL_SEC = 1800  # 計測間隔（秒）= 30分
+WDT_TIMEOUT  = 8000  # ウォッチドッグ（ms）
 TIME_OFFSET  = 9 * 3600  # JST (UTC+9)
 
 led_tx    = machine.Pin(PIN_LED_TX, machine.Pin.OUT)
@@ -243,6 +244,7 @@ def connect_wifi():
         wlan.active(True)
         wlan.connect(config.WIFI_SSID, config.WIFI_PASSWORD)
         for _ in range(20):
+            wdt.feed()
             if wlan.isconnected():
                 print("[WiFi] connected (attempt {}):".format(attempt), wlan.ifconfig()[0])
                 return True
@@ -400,6 +402,7 @@ def send_power_alert(bus_v):
 
 
 # --- 起動 ---
+wdt = machine.WDT(timeout=WDT_TIMEOUT)
 wifi_off()
 
 # SDマウント。失敗してもraiseしない（センサー測定とMQTT送信は続ける）
@@ -416,21 +419,26 @@ set_led_state(
 )
 
 # 初回のみNTP同期
+wdt.feed()
 if connect_wifi():
     sync_ntp()
     wifi_off()
+wdt.feed()
 
 
 # --- メインループ ---
 while True:
+    wdt.feed()
     wifi_off()
     ts    = jst_time()
     data  = read_sensors()
+    wdt.feed()
     bus_v = read_bus_voltage()
     print(ts[:6], data, "bus={}V".format(round(bus_v, 2)))
 
     # SDヘルスチェック付き書き込み
     log_to_sd_with_recovery(ts, data)
+    wdt.feed()
 
     # アラート状態を判定してLED反映
     power_alert = bus_v < POWER_THRESHOLD_V
@@ -439,8 +447,11 @@ while True:
 
     # WiFi ON → 送信 → WiFi OFF
     if connect_wifi():
+        wdt.feed()
         ok_mqtt    = send_mqtt(ts, data)
+        wdt.feed()
         ok_ambient = send_ambient(data)
+        wdt.feed()
         send_status(ts, bus_v)
         if power_alert:
             print("[PowerAlert] bus={}V < {}V".format(round(bus_v, 2), POWER_THRESHOLD_V))
@@ -452,4 +463,6 @@ while True:
         print("WiFi unavailable - SD only")
         wifi_off()
 
-    time.sleep(INTERVAL_SEC)
+    for _ in range(INTERVAL_SEC):
+        wdt.feed()
+        time.sleep(1)
