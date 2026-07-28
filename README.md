@@ -61,16 +61,15 @@
 
 ### センサー配置（1台あたり7本）
 
-| ラベル | 位置 | 深さ | 備考 |
-|---|---|---|---|
-| S1_center_15cm | 中央 | 15cm | |
-| S2_center_25cm | 中央 | 25cm | |
-| S3_center_40cm | 中央 | 40cm | |
-| S4_edge_15cm | エッジ | 15cm | |
-| S5_edge_25cm | エッジ | 25cm | |
-| S6_edge_40cm | エッジ | 40cm | |
-| S7_outdoor | 外気温 | — | 区Cのみ |
-| S7_soil_5cm | 土壌 | 5cm | 区A・区Bのみ（2026-07-28〜）。BLOF公式の基準深さだが途中計測のため**参考値**、積算温度には含めない |
+| ラベル | 位置 | 深さ |
+|---|---|---|
+| S1_center_10cm | 中央 | 10cm |
+| S2_center_25cm | 中央 | 25cm |
+| S3_center_40cm | 中央 | 40cm |
+| S4_edge_10cm | エッジ | 10cm |
+| S5_edge_25cm | エッジ | 25cm |
+| S6_edge_40cm | エッジ | 40cm |
+| S7_outdoor | 外気温 | — |
 
 ### ゾーン区分
 
@@ -206,7 +205,7 @@ GCE 上の配置（リポジトリ外、VM 内に直接配置）:
 
 | トピック | ペイロード例 |
 |---|---|
-| `solar-heat/zone-a/S1_center_15cm` | `{"time": "2026-07-12T16:00:00", "temp": 29.88}` |
+| `solar-heat/zone-a/S1_center_10cm` | `{"time": "2026-07-12T16:00:00", "temp": 29.88}` |
 | `solar-heat/zone-a/status` | `{"zone": "zone-a", "bus_v": 5.02, "sd_status": "ok", "uptime_min": 120}` |
 | `solar-heat/zone-a/power_alert` | `{"zone": "zone-a", "bus_v": 3.8, "alert": "main_power_lost"}` |
 
@@ -269,7 +268,7 @@ ZONE          = "zone-a"  # zone-a / zone-b / zone-c
 SENSOR_PINS = {
     8:  "S3_center_40cm",   # GP8 のプローブが実際に40cmにある場合
     9:  "S2_center_25cm",
-    10: "S1_center_15cm",
+    10: "S1_center_10cm",
     ...
 }
 ```

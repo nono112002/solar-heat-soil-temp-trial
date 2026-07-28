@@ -1,7 +1,6 @@
 # config.py — Pico3（エリアA設置）
 # 筐体はPico3だが、物理的にはエリアAに設置されている
-# GP8⇔GP10(中央15cm⇔40cm)、GP12⇔GP13(端部25cm⇔40cm) が入れ替わっている
-# GP14は外気温から土壌5cm（BLOF公式の基準深さ・参考値）に差し替え（2026-07-28 08:50）
+# GP8⇔GP10(中央10cm⇔40cm)、GP12⇔GP13(端部25cm⇔40cm) が入れ替わっている
 
 WIFI_SSID     = "***REDACTED_SSID***"
 WIFI_PASSWORD = "***REDACTED***"
@@ -19,9 +18,9 @@ ZONE = "zone-a"
 SENSOR_PINS = {
     8:  "S3_center_40cm",
     9:  "S2_center_25cm",
-    10: "S1_center_15cm",
-    11: "S4_edge_15cm",
+    10: "S1_center_10cm",
+    11: "S4_edge_10cm",
     12: "S6_edge_40cm",
     13: "S5_edge_25cm",
-    14: "S7_soil_5cm",
+    14: "S7_outdoor",
 }
