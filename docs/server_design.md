@@ -255,6 +255,7 @@ ssh nono@192.168.0.10 "sudo cp ~/solar-heat/server/grafana/provisioning/dashboar
 
 ## 更新履歴
 
+- **2026-07-28**: センサーラベル変更。`S1_center_10cm`→`S1_center_15cm`、`S4_edge_10cm`→`S4_edge_15cm`（実深さ15cmの誤記修正、既存DBレコードもUPDATE済み）。区A・区Bの`S7_outdoor`→`S7_soil_5cm`（外気温から土壌5cmに差し替え、参考値）。
 - **2026-07-20**: ZONE_REMAP / LABEL_REMAP をサーバーから廃止。各Picoのconfig.pyで正しいZONE・SENSOR_PINSを設定する方式に変更。ウォッチドッグタイマー追加。Flask API + nginx SSL追加。
 - **2026-07-19**: 圃場設置、ZONE_REMAP / LABEL_REMAP 導入。
 - **2026-07-12**: GCE MQTTブローカー移設。

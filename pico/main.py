@@ -42,10 +42,10 @@ POWER_THRESHOLD_V = 4.0
 
 # DS18B20 個別GPIO（config.py で上書き可能）
 SENSOR_PINS = getattr(config, "SENSOR_PINS", {
-    8:  "S1_center_10cm",
+    8:  "S1_center_15cm",
     9:  "S2_center_25cm",
     10: "S3_center_40cm",
-    11: "S4_edge_10cm",
+    11: "S4_edge_15cm",
     12: "S5_edge_25cm",
     13: "S6_edge_40cm",
     14: "S7_outdoor",
