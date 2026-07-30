@@ -1,5 +1,8 @@
 # 認証情報・設定ファイル（絶対にコミットしない）
 pico/config.py
+pico/config_pico*.py
+pico/config - コピー.py
+server/.env
 .env
 .env.txt
 **/.env

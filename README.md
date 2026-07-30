@@ -256,21 +256,14 @@ mpremote connect COMx fs cp pico/config.py :config.py
 リポジトリに `config_pico1.py` / `config_pico2.py` / `config_pico3.py` を用意してある。
 
 ```python
-WIFI_SSID     = "***REDACTED_SSID***"
-WIFI_PASSWORD = "***REDACTED***"
-MQTT_BROKER   = "34.58.138.105"
+# config_example.py を参照。実際の値は config_pico*.py に記入（gitignore対象）
+WIFI_SSID     = "your_ssid"
+WIFI_PASSWORD = "your_password"
+MQTT_BROKER   = "your_mqtt_host"
 MQTT_PORT     = 1883
-MQTT_USER     = "picobox"
-MQTT_PASS     = "***REDACTED***"
+MQTT_USER     = "your_user"
+MQTT_PASS     = "your_pass"
 ZONE          = "zone-a"  # zone-a / zone-b / zone-c
-
-# プローブ入替がある場合のみ記載（main.py のデフォルトを上書き）
-SENSOR_PINS = {
-    8:  "S3_center_40cm",   # GP8 のプローブが実際に40cmにある場合
-    9:  "S2_center_25cm",
-    10: "S1_center_10cm",
-    ...
-}
 ```
 
 ### 3. Hugo（ポートフォリオ HP）
@@ -290,7 +283,7 @@ hugo server --bind 0.0.0.0 --baseURL http://192.168.0.10 -p 1313
 # gcloud CLI でセットアップ済み
 # プロジェクト: solar-heat-mqtt
 # VM: mqtt-broker (e2-micro, us-central1-a)
-# Mosquitto 認証: picobox / ***REDACTED***
+# Mosquitto 認証: server/.env を参照
 # ファイアウォール: tcp:1883 を開放
 
 # バックアップロガー
@@ -310,7 +303,7 @@ hugo server --bind 0.0.0.0 --baseURL http://192.168.0.10 -p 1313
 journalctl -u mqtt_logger -f
 
 # MQTT 受信状況をリアルタイム確認
-mosquitto_sub -h 34.58.138.105 -u picobox -P ***REDACTED*** -t 'solar-heat/#' -v
+mosquitto_sub -h $MQTT_HOST -u $MQTT_USER -P $MQTT_PASS -t 'solar-heat/#' -v
 
 # DB 確認
 sqlite3 /var/lib/solar-heat/data.db 'SELECT * FROM temperature ORDER BY id DESC LIMIT 10;'
@@ -331,7 +324,7 @@ hugo server --bind 0.0.0.0 --baseURL http://192.168.0.10 -p 1313
 sudo journalctl -u mosquitto -f
 
 # 接続テスト
-mosquitto_pub -h localhost -u picobox -P ***REDACTED*** -t test/hello -m "test"
+mosquitto_pub -h localhost -u $MQTT_USER -P $MQTT_PASS -t test/hello -m "test"
 
 # バックアップロガー確認
 sudo journalctl -u mqtt_logger -f

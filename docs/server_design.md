@@ -72,7 +72,7 @@ PicoBox（区A/B/C 各台）から送られてくる温度データを収集・�
 
 | 役割 | 採用 | バージョン | 備考 |
 |---|---|---|---|
-| MQTTブローカー | Mosquitto | 2.0.x | パスワード認証���picobox / ***REDACTED***） |
+| MQTTブローカー | Mosquitto | 2.0.x | パスワード認証���server/.env を参照） |
 | MQTT購読・保存 | mqtt_logger.py | Python 3.x | /home/nono/solar-heat/server/ から実行 |
 | データ保存 | SQLite | 3.x | /var/lib/solar-heat/data.db |
 | データAPI | Flask + gunicorn | Python 3.x | :5000、nginx経由で HTTPS 公開 |
@@ -193,7 +193,7 @@ URL: `http://192.168.0.10:3000/d/solar-heat-main/solar-heat-temperature-monitor`
 | インスタンス名 | mqtt-broker |
 | IP | 34.58.138.105 |
 | SSH | `gcloud compute ssh nono@mqtt-broker --zone=us-central1-a` |
-| MQTT認証 | user: `picobox` / pass: `***REDACTED***` |
+| MQTT認証 | server/.env を参照 |
 | **Raspberry Pi** | |
 | ホスト名 | hp-server |
 | IP | 192.168.0.10 |
@@ -208,7 +208,7 @@ URL: `http://192.168.0.10:3000/d/solar-heat-main/solar-heat-temperature-monitor`
 ```bash
 # === GCE ===
 # MQTT受信確認
-gcloud compute ssh nono@mqtt-broker --zone=us-central1-a --command="mosquitto_sub -h localhost -u picobox -P ***REDACTED*** -t 'solar-heat/#' -v"
+gcloud compute ssh nono@mqtt-broker --zone=us-central1-a --command="mosquitto_sub -h localhost -u $MQTT_USER -P $MQTT_PASS -t 'solar-heat/#' -v"
 
 # GCE mqtt_logger ログ
 gcloud compute ssh nono@mqtt-broker --zone=us-central1-a --command="journalctl -u mqtt_logger -f"
